@@ -40,6 +40,9 @@
                     ItemsSource="{x:Bind ViewModel.UserViews, Mode=OneWay}"
                     SelectionMode="None"
                     IsItemClickEnabled="True"
+                    ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                    ScrollViewer.HorizontalScrollMode="Enabled"
+                    ScrollViewer.VerticalScrollMode="Disabled"
                     Margin="8 0 20 10">
                   <Interactivity:Interaction.Behaviors>
                     <Behaviors:FocusFirstItemOnLoadBehavior />
@@ -73,6 +76,9 @@
                                     Margin="8,0,20,10"
                                     IsItemClickEnabled="True"
                                     ItemsSource="{x:Bind Items}"
+                                    ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                                    ScrollViewer.HorizontalScrollMode="Enabled"
+                                    ScrollViewer.VerticalScrollMode="Disabled"
                                     SelectionMode="None">
                                     <Interactivity:Interaction.Behaviors>
                                       <Behaviors:ListViewBaseCommandBehavior Command="{x:Bind Path=NavigateToItemCommand}" />
