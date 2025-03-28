@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "JellyBox": {
+      "commandName": "MsixPackage"
+    }
+  }
+}
