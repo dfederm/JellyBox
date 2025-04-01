@@ -1,0 +1,45 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  # Allow manually triggering
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Git Versioning requires a non-shallow clone
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+            dotnet-version: '9.x'
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build
+        run: msbuild -property:Configuration=Release -property:Platform=x64 -bl:logs/msbuild.binlog
+
+      - name: Upload logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: ./logs
+        if: ${{ always() }} # Always run this step even on failure
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts
+          path: ./artifacts
+        if: ${{ always() }} # Always run this step even on failure
