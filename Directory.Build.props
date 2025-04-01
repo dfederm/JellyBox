@@ -10,6 +10,14 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisMode>All</AnalysisMode>
 
+    <!-- To enable IDE0005 -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- Use artifacts output layout (https://learn.microsoft.com/en-us/dotnet/core/sdk/artifacts-output) -->
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+
     <LangVersion>Preview</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 </Project>

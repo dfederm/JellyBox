@@ -1,0 +1,23 @@
+<Project>
+  <PropertyGroup>
+    <!-- Manage package versions centrally (https://learn.microsoft.com/en-us/nuget/consume-packages/Central-Package-Management) -->
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Blurhash.Core" Version="4.0.0" />
+    <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageVersion Include="Jellyfin.Sdk" Version="2024.10.28" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="9.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.3" />
+    <PackageVersion Include="Microsoft.UI.Xaml" Version="2.8.7" />
+    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.3124.44" />
+    <PackageVersion Include="Microsoft.Xaml.Behaviors.Uwp.Managed" Version="3.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Versioning (https://github.com/dotnet/Nerdbank.GitVersioning) -->
+    <GlobalPackageReference Include="Nerdbank.GitVersioning" Version="3.7.115" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
