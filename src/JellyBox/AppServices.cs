@@ -15,14 +15,14 @@ internal sealed class AppServices
 {
     private AppServices()
     {
-        PackageId packageId = Package.Current.Id;
-        PackageVersion packageVersion = packageId.Version;
-        string packageVersionStr = $"{packageVersion.Major}.{packageVersion.Minor}.{packageVersion.Build}.{packageVersion.Revision}";
+        string clientName = Package.Current.DisplayName;
+        PackageVersion clientVersion = Package.Current.Id.Version;
+        string packageVersionStr = $"{clientVersion.Major}.{clientVersion.Minor}.{clientVersion.Build}.{clientVersion.Revision}";
         EasClientDeviceInformation deviceInformation = new();
 
         JellyfinSdkSettings sdkClientSettings = new();
         sdkClientSettings.Initialize(
-            packageId.Name,
+            Package.Current.DisplayName,
             packageVersionStr,
             deviceInformation.FriendlyName,
             deviceInformation.Id.ToString());
@@ -44,7 +44,7 @@ internal sealed class AppServices
             "Jellyfin",
             httpClient =>
             {
-                httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(packageId.Name, packageVersionStr));
+                httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue(clientName, packageVersionStr));
                 httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json", 1.0));
                 httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("*/*", 0.8));
             });

@@ -7,15 +7,15 @@
   IgnorableNamespaces="uap mp">
 
   <Identity
-    Name="56761BD1-4F6C-4AAF-803D-B70A5AEDF4ED"
-    Publisher="CN=david"
-    Version="1.0.0.0" />
+    Name="JellyBox"
+    Publisher="CN=David Federman"
+    Version="0.0.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="56761BD1-4F6C-4AAF-803D-B70A5AEDF4ED" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
     <DisplayName>JellyBox</DisplayName>
-    <PublisherDisplayName>david</PublisherDisplayName>
+    <PublisherDisplayName>David Federman</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
