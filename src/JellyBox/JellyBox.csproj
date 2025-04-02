@@ -26,4 +26,35 @@
     <PackageReference Include="Microsoft.Web.WebView2" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.Uwp.Managed" />
   </ItemGroup>
+  <Target Name="SetAppxManifestVersion"
+          BeforeTargets="PrepareForBuild"
+          DependsOnTargets="GetBuildVersion">
+    <ItemGroup>
+      <_OriginalAppxManifest Include="@(AppxManifest)" />
+      <AppxManifest Remove="@(AppxManifest)" />
+      <AppxManifest Include="@(_OriginalAppxManifest -> '$(IntermediateOutputPath)%(Filename)%(Extension)')" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(_OriginalAppxManifest)"
+      DestinationFiles="@(AppxManifest)"
+      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+      Retries="$(CopyRetryCount)"
+      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)"
+      />
+    <PropertyGroup>
+      <AppxManifestNamespaces>
+          <Namespace Prefix="dn" Uri="http://schemas.microsoft.com/appx/manifest/foundation/windows10" />
+          <Namespace Prefix="mp" Uri="http://schemas.microsoft.com/appx/2014/phone/manifest" />
+          <Namespace Prefix="uap" Uri="http://schemas.microsoft.com/appx/manifest/uap/windows10" />
+      </AppxManifestNamespaces>
+    </PropertyGroup>
+    <XmlPoke
+      XmlInputPath="@(AppxManifest)"
+      Value="$(BuildVersion)"
+      Query="/dn:Package/dn:Identity/@Version"
+      Namespaces="$(AppxManifestNamespaces)"
+      />
+    </Target>
 </Project>
