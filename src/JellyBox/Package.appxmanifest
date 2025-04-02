@@ -7,11 +7,11 @@
   IgnorableNamespaces="uap mp">
 
   <Identity
-    Name="5d7105e9-00be-4158-aec7-a90f3d41eb50"
+    Name="56761BD1-4F6C-4AAF-803D-B70A5AEDF4ED"
     Publisher="CN=david"
     Version="1.0.0.0" />
 
-  <mp:PhoneIdentity PhoneProductId="5d7105e9-00be-4158-aec7-a90f3d41eb50" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+  <mp:PhoneIdentity PhoneProductId="56761BD1-4F6C-4AAF-803D-B70A5AEDF4ED" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
     <DisplayName>JellyBox</DisplayName>

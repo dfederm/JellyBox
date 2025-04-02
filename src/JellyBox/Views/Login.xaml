@@ -65,7 +65,13 @@
                     IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
                     Style="{StaticResource PrimaryButton}"
                     Margin="0 0 0 10" />
-                <!-- TODO: "Use Quick Connect" button -->
+                <Button
+                    Content="Use Quick Connect"
+                    Visibility="{x:Bind ViewModel.IsQuickConnectEnabled, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"
+                    Command="{x:Bind ViewModel.QuickConnectCommand}"
+                    IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
+                    Style="{StaticResource SecondaryButton}"
+                    Margin="0 0 0 10" />
                 <!-- TODO: "Forgot Password" button -->
                 <Button
                     Content="Change Server"
