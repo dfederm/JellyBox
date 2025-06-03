@@ -48,6 +48,7 @@
           <Namespace Prefix="dn" Uri="http://schemas.microsoft.com/appx/manifest/foundation/windows10" />
           <Namespace Prefix="mp" Uri="http://schemas.microsoft.com/appx/2014/phone/manifest" />
           <Namespace Prefix="uap" Uri="http://schemas.microsoft.com/appx/manifest/uap/windows10" />
+          <Namespace Prefix="rescap" Uri="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" />
       </AppxManifestNamespaces>
     </PropertyGroup>
     <XmlPoke
