@@ -49,7 +49,7 @@ internal sealed partial class VideoViewModel : ObservableObject
 
     public async Task PlayVideoAsync(Video.Parameters parameters, MediaPlayerElement playerElement)
     {
-        var item = parameters.Item;
+        BaseItemDto item = parameters.Item;
         _playerElement = playerElement;
 
         DeviceProfile deviceProfile = _deviceProfileManager.Profile;
@@ -154,7 +154,8 @@ internal sealed partial class VideoViewModel : ObservableObject
         }
 #pragma warning restore CA2000 // Dispose objects before losing scope
 
-        if (mediaSourceInfo.DefaultSubtitleStreamIndex.HasValue)
+        if (mediaSourceInfo.DefaultSubtitleStreamIndex.HasValue
+            && mediaSourceInfo.DefaultSubtitleStreamIndex.Value != -1)
         {
             MediaStream subtitleTrack = mediaSourceInfo.MediaStreams![mediaSourceInfo.DefaultSubtitleStreamIndex.Value];
             if (subtitleTrack.IsExternal.GetValueOrDefault())
@@ -231,6 +232,13 @@ internal sealed partial class VideoViewModel : ObservableObject
             await ReportProgressAsync();
         };
 
+        MediaStream videoStream = mediaSourceInfo.MediaStreams!.First(stream => stream.Type == MediaStream_Type.Video);
+        await DisplayModeManager.SetBestDisplayModeAsync(
+            (uint)videoStream.Width!.Value,
+            (uint)videoStream.Height!.Value,
+            (double)videoStream.RealFrameRate!.Value,
+            videoStream.VideoRangeType!.Value);
+
         _playerElement.MediaPlayer.Play();
 
         await ReportStartedAsync();
@@ -259,6 +267,8 @@ internal sealed partial class VideoViewModel : ObservableObject
             mediaPlaybackItem.Source.Dispose();
             player.Dispose();
         }
+
+        await DisplayModeManager.SetDefaultDisplayModeAsync();
 
         await ReportStoppedAsync();
     }
