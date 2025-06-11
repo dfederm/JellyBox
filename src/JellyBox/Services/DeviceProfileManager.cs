@@ -1,5 +1,6 @@
 ﻿using Jellyfin.Sdk.Generated.Models;
 using Windows.Devices.Enumeration;
+using Windows.Graphics.Display.Core;
 using Windows.Media.Audio;
 using Windows.Media.Core;
 using Windows.Media.Devices;
@@ -822,7 +823,10 @@ internal sealed class DeviceProfileManager
         string vp9VideoRangeTypes = "SDR";
         string av1VideoRangeTypes = "SDR";
 
-        bool supportsHdr10 = true; // TODO: Check
+        HdmiDisplayInformation hdmiDisplayInformation = HdmiDisplayInformation.GetForCurrentView();
+        IReadOnlyList<HdmiDisplayMode> supportedDisplayModes = hdmiDisplayInformation?.GetSupportedDisplayModes() ?? [];
+
+        bool supportsHdr10 = supportedDisplayModes.Any(mode => mode.IsSmpte2084Supported);
         if (supportsHdr10)
         {
             hevcVideoRangeTypes += "|HDR10";
@@ -838,7 +842,7 @@ internal sealed class DeviceProfileManager
             av1VideoRangeTypes += "|HLG";
         }
 
-        bool supportsDolbyVision = true; // TODO: Check
+        bool supportsDolbyVision = supportedDisplayModes.Any(mode => mode.IsDolbyVisionLowLatencySupported);
         if (supportsDolbyVision)
         {
             hevcVideoRangeTypes += "|DOVI";
