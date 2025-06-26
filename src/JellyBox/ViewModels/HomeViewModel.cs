@@ -31,7 +31,7 @@ internal sealed partial class HomeViewModel : ObservableObject
     public partial ObservableCollection<BaseItemDto>? NextUpItems { get; set; }
 
     [ObservableProperty]
-    public partial List<HomeViewSection>? Sections { get; set; }
+    public partial List<Section>? Sections { get; set; }
 
     public HomeViewModel(JellyfinApiClient jellyfinApiClient, NavigationManager navigationManager)
     {

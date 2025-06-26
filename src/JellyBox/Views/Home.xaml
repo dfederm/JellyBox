@@ -64,7 +64,7 @@
 
                 <ItemsControl ItemsSource="{x:Bind ViewModel.Sections, Mode=OneWay}">
                     <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="m:HomeViewSection">
+                        <DataTemplate x:DataType="m:Section">
                             <StackPanel Visibility="{x:Bind Items, Converter={StaticResource EmptyCollectionToVisibilityConverter}}">
                                 <TextBlock
                                     Margin="20,10,0,5"

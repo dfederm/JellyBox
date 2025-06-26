@@ -3,7 +3,7 @@ using Jellyfin.Sdk.Generated.Models;
 
 namespace JellyBox.Models;
 
-internal sealed class HomeViewSection
+internal sealed class Section
 {
     public required string Name { get; set; }
 
