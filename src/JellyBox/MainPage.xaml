@@ -13,8 +13,6 @@
             PaneDisplayMode="LeftCompact"
             IsBackButtonVisible="Collapsed"
             IsSettingsVisible="False">
-        <ScrollViewer>
-            <Frame x:Name="ContentFrame" />
-        </ScrollViewer>
+        <Frame x:Name="ContentFrame" />
     </NavigationView>
 </Page>

@@ -2,6 +2,8 @@ using System.Collections.ObjectModel;
 using System.Text;
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using JellyBox.Models;
 using JellyBox.Services;
 using JellyBox.Views;
 using Jellyfin.Sdk;
@@ -87,6 +89,9 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
     [ObservableProperty]
     public partial Brush? FavoriteBrush { get; set; }
 
+    [ObservableProperty]
+    public partial List<Section>? Sections { get; set; }
+
     public ItemDetailsViewModel(JellyfinApiClient jellyfinApiClient, NavigationManager navigationManager)
     {
         _jellyfinApiClient = jellyfinApiClient;
@@ -149,6 +154,26 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         Tags = Item.Tags is not null ? $"Tags: {string.Join(", ", Item.Tags)}" : null;
 
         UpdateUserData();
+
+        Task<Section?>[] sectionTasks =
+        [
+            GetNextUpSectionAsync(),
+            GetChildrenSectionAsync(),
+            // TODO: Cast & Crew -->
+            // TODO: More Like This -->
+        ];
+
+        List<Section> sections = new(sectionTasks.Length);
+        foreach (Task<Section?> sectionTask in sectionTasks)
+        {
+            Section? section = await sectionTask;
+            if (section is not null)
+            {
+                sections.Add(section);
+            }
+        }
+
+        Sections = sections;
     }
 
     partial void OnSelectedSourceContainerChanged(MediaSourceInfoWrapper? value)
@@ -370,6 +395,118 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
         IsFavorite = Item.UserData.IsFavorite.GetValueOrDefault();
         FavoriteBrush = IsFavorite ? OnBrush : OffBrush;
+    }
+
+    private async Task<Section?> GetNextUpSectionAsync()
+    {
+        if (Item is null)
+        {
+            return null;
+        }
+
+        if (Item.Type != BaseItemDto_Type.Series)
+        {
+            return null;
+        }
+
+        BaseItemDtoQueryResult? result = await _jellyfinApiClient.Shows.NextUp.GetAsync(request =>
+        {
+            request.QueryParameters.SeriesId = Item.Id;
+        });
+        if (result?.Items is null || result.Items.Count == 0)
+        {
+            return null;
+        }
+
+        return new Section
+        {
+            Name = "Next Up",
+            Items = result.Items,
+            NavigateToItemCommand = NavigateToItemCommand,
+        };
+    }
+
+    private async Task<Section?> GetChildrenSectionAsync()
+    {
+        if (Item is null)
+        {
+            return null;
+        }
+
+        if (!Item.IsFolder.GetValueOrDefault())
+        {
+            return null;
+        }
+
+        BaseItemDtoQueryResult? result;
+        if (Item.Type == BaseItemDto_Type.Series)
+        {
+            result = await _jellyfinApiClient.Shows[Item.Id!.Value].Seasons.GetAsync(request =>
+            {
+                request.QueryParameters.Fields = [ItemFields.ItemCounts, ItemFields.PrimaryImageAspectRatio, ItemFields.CanDelete, ItemFields.MediaSourceCount];
+            });
+        }
+        else if (Item.Type == BaseItemDto_Type.Season)
+        {
+            result = await _jellyfinApiClient.Shows[Item.SeriesId!.Value].Episodes.GetAsync(request =>
+            {
+                request.QueryParameters.SeasonId = Item.Id;
+                request.QueryParameters.Fields = [ItemFields.ItemCounts, ItemFields.PrimaryImageAspectRatio, ItemFields.CanDelete, ItemFields.MediaSourceCount, ItemFields.Overview];
+            });
+        }
+        else
+        {
+            result = await _jellyfinApiClient.Items.GetAsync(request =>
+            {
+                request.QueryParameters.ParentId = Item.Id;
+                request.QueryParameters.Fields = [ItemFields.ItemCounts, ItemFields.PrimaryImageAspectRatio, ItemFields.CanDelete, ItemFields.MediaSourceCount];
+
+                if (Item.Type == BaseItemDto_Type.MusicAlbum)
+                {
+                    request.QueryParameters.SortBy = [ItemSortBy.ParentIndexNumber, ItemSortBy.IndexNumber, ItemSortBy.SortName];
+                }
+                else if (Item.Type != BaseItemDto_Type.BoxSet)
+                {
+                    request.QueryParameters.SortBy = [ItemSortBy.SortName];
+                }
+                else if (Item.Type == BaseItemDto_Type.MusicArtist)
+                {
+                    request.QueryParameters.SortBy = [ItemSortBy.PremiereDate, ItemSortBy.ProductionYear, ItemSortBy.SortName];
+                }
+            });
+        }
+
+        if (result?.Items is null)
+        {
+            return null;
+        }
+
+        if (Item.Type == BaseItemDto_Type.Episode && result.Items.Count < 2)
+        {
+            return null;
+        }
+
+        string sectionName = Item.Type switch
+        {
+            BaseItemDto_Type.Series => "Seasons",
+            BaseItemDto_Type.Season => "Episodes",
+            BaseItemDto_Type.MusicAlbum => "Tracks",
+            _ => "Items"
+        };
+
+        // TODO: Support list view for Type == MusicAlbum | Season
+        return new Section
+        {
+            Name = sectionName,
+            Items = result.Items,
+            NavigateToItemCommand = NavigateToItemCommand,
+        };
+    }
+
+    [RelayCommand]
+    private void NavigateToItem(BaseItemDto item)
+    {
+        _navigationManager.NavigateToItem(item);
     }
 
     private static Uri GetWebVideoUri(string url)
