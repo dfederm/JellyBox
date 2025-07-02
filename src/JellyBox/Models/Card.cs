@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using Jellyfin.Sdk.Generated.Models;
 
-namespace JellyBox.ViewModels;
+namespace JellyBox.Models;
 
 internal enum CardShape
 {
@@ -11,9 +11,7 @@ internal enum CardShape
     Banner,
 }
 
-#pragma warning disable CA1812 // Avoid uninstantiated internal classes. Used via dependency injection.
-internal sealed partial class CardViewModel : ObservableObject
-#pragma warning disable CA1812 // Avoid uninstantiated internal classes
+internal sealed partial class Card : ObservableObject
 {
     [ObservableProperty]
     public partial BaseItemDto Item { get; set; }

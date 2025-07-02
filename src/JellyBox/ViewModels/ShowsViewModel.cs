@@ -1,6 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using JellyBox.Models;
 using JellyBox.Services;
 using JellyBox.Views;
 using Jellyfin.Sdk;
@@ -17,8 +18,7 @@ internal sealed partial class ShowsViewModel : ObservableObject
 
     private Guid? _collectionItemId;
 
-    [ObservableProperty]
-    public partial ObservableCollection<BaseItemDto>? Shows { get; set; }
+    public ObservableCollection<Card> Shows { get; } = new();
 
     public ShowsViewModel(JellyfinApiClient jellyfinApiClient, NavigationManager navigationManager)
     {
@@ -54,15 +54,29 @@ internal sealed partial class ShowsViewModel : ObservableObject
             parameters.QueryParameters.ImageTypeLimit = 1;
             parameters.QueryParameters.EnableImageTypes = [ImageType.Primary, ImageType.Backdrop, ImageType.Banner, ImageType.Thumb];
         });
+
         if (result?.Items is not null)
         {
-            Shows = new ObservableCollection<BaseItemDto>(result.Items);
+            foreach (BaseItemDto item in result.Items)
+            {
+                if (!item.Id.HasValue)
+                {
+                    continue;
+                }
+
+                Card card = new()
+                {
+                    Item = item,
+                    Shape = CardShape.Portrait,
+                };
+                Shows.Add(card);
+            }
         }
     }
 
     [RelayCommand]
-    private void NavigateToItem(BaseItemDto item)
+    private void NavigateToCard(Card card)
     {
-        _navigationManager.NavigateToItem(item);
+        _navigationManager.NavigateToItem(card.Item);
     }
 }

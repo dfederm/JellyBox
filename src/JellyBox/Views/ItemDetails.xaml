@@ -238,7 +238,7 @@
                             <ItemsControl ItemsSource="{x:Bind ViewModel.Sections, Mode=OneWay}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="m:Section">
-                                        <StackPanel Visibility="{x:Bind Items, Converter={StaticResource EmptyCollectionToVisibilityConverter}}">
+                                        <StackPanel Visibility="{x:Bind Cards, Converter={StaticResource EmptyCollectionToVisibilityConverter}}">
                                             <TextBlock
                                                 Margin="20,10,0,5"
                                                 HorizontalAlignment="Left"
@@ -248,28 +248,20 @@
                                             <ListView
                                                 Margin="8,0,20,10"
                                                 IsItemClickEnabled="True"
-                                                ItemsSource="{x:Bind Items}"
+                                                ItemsSource="{x:Bind Cards}"
+                                                ItemTemplate="{StaticResource Card}"
                                                 ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                                                 ScrollViewer.HorizontalScrollMode="Enabled"
                                                 ScrollViewer.VerticalScrollMode="Disabled"
                                                 SelectionMode="None">
                                                 <Interactivity:Interaction.Behaviors>
-                                                    <Behaviors:ListViewBaseCommandBehavior Command="{x:Bind Path=NavigateToItemCommand}" />
+                                                    <Behaviors:ListViewBaseCommandBehavior Command="{x:Bind Path=NavigateToCardCommand}" />
                                                 </Interactivity:Interaction.Behaviors>
                                                 <ListView.ItemsPanel>
                                                     <ItemsPanelTemplate>
                                                         <StackPanel Orientation="Horizontal" />
                                                     </ItemsPanelTemplate>
                                                 </ListView.ItemsPanel>
-                                                <ListView.ItemTemplate>
-                                                    <DataTemplate x:DataType="models:BaseItemDto">
-                                                        <!-- TODO: Sections can specify different card shape -->
-                                                        <uc:Card
-                                                            Item="{x:Bind}"
-                                                            PreferredImageType="Thumb"
-                                                            Shape="Backdrop" />
-                                                    </DataTemplate>
-                                                </ListView.ItemTemplate>
                                             </ListView>
                                         </StackPanel>
                                     </DataTemplate>

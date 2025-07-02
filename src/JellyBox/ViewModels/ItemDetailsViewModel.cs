@@ -418,11 +418,28 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             return null;
         }
 
+        List<Card> cards = new(result.Items.Count);
+        foreach (BaseItemDto item in result.Items)
+        {
+            if (!item.Id.HasValue)
+            {
+                continue;
+            }
+
+            Card card = new()
+            {
+                Item = item,
+                Shape = CardShape.Backdrop,
+                PreferredImageType = ImageType.Thumb,
+            };
+            cards.Add(card);
+        }
+
         return new Section
         {
             Name = "Next Up",
-            Items = result.Items,
-            NavigateToItemCommand = NavigateToItemCommand,
+            Cards = cards,
+            NavigateToCardCommand = NavigateToCardCommand,
         };
     }
 
@@ -494,19 +511,42 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             _ => "Items"
         };
 
+        CardShape cardShape = Item.Type switch
+        {
+            BaseItemDto_Type.Series => CardShape.Portrait,
+            _ => CardShape.Backdrop
+        };
+
+        List<Card> cards = new(result.Items.Count);
+        foreach (BaseItemDto item in result.Items)
+        {
+            if (!item.Id.HasValue)
+            {
+                continue;
+            }
+
+            Card card = new()
+            {
+                Item = item,
+                Shape = cardShape,
+                PreferredImageType = ImageType.Thumb,
+            };
+            cards.Add(card);
+        }
+
         // TODO: Support list view for Type == MusicAlbum | Season
         return new Section
         {
             Name = sectionName,
-            Items = result.Items,
-            NavigateToItemCommand = NavigateToItemCommand,
+            Cards = cards,
+            NavigateToCardCommand = NavigateToCardCommand,
         };
     }
 
     [RelayCommand]
-    private void NavigateToItem(BaseItemDto item)
+    private void NavigateToCard(Card card)
     {
-        _navigationManager.NavigateToItem(item);
+        _navigationManager.NavigateToItem(card.Item);
     }
 
     private static Uri GetWebVideoUri(string url)
