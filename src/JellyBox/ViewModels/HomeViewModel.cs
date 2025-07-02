@@ -15,23 +15,7 @@ internal sealed partial class HomeViewModel : ObservableObject
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly NavigationManager _navigationManager;
 
-    [ObservableProperty]
-    public partial ObservableCollection<BaseItemDto>? UserViews { get; set; }
-
-    [ObservableProperty]
-    public partial ObservableCollection<BaseItemDto>? ContinueWatchingItems { get; set; }
-
-    [ObservableProperty]
-    public partial ObservableCollection<BaseItemDto>? ContinueListeningItems { get; set; }
-
-    [ObservableProperty]
-    public partial ObservableCollection<BaseItemDto>? ContinueReadingItems { get; set; }
-
-    [ObservableProperty]
-    public partial ObservableCollection<BaseItemDto>? NextUpItems { get; set; }
-
-    [ObservableProperty]
-    public partial List<Section>? Sections { get; set; }
+    public ObservableCollection<Section> Sections { get; } = new();
 
     public HomeViewModel(JellyfinApiClient jellyfinApiClient, NavigationManager navigationManager)
     {
@@ -41,91 +25,35 @@ internal sealed partial class HomeViewModel : ObservableObject
 
     public async Task InitializeAsync()
     {
-        Task[] tasks =
+        Task<Section?>[] sectionTasks =
         [
-            InitializeUserViewsAsync(),
-            InitializeContinueWatchingItemsAsync(),
-            InitializeContinueListeningItemsAsync(),
-            InitializeContinueReadingItemsAsync(),
+            GetUserViewsSectionAsync(),
+            GetResumeSectionAsync("Continue Watching", MediaType.Video),
+            GetResumeSectionAsync("Continue Listening", MediaType.Audio),
+            GetResumeSectionAsync("Continue Reading", MediaType.Book),
             // TODO: LiveTV Section,
-            InitializeNextUpItemsAsync(),
+            GetNextUpSectionAsync(),
             // TODO: LatestMedia Sections
         ];
 
-        await Task.WhenAll(tasks);
-
-        Sections =
-        [
-            new ()
-            {
-                Name = "Continue Watching",
-                Items = ContinueWatchingItems,
-                NavigateToItemCommand = NavigateToItemCommand,
-            },
-            new ()
-            {
-                Name = "Continue Listening",
-                Items = ContinueListeningItems,
-                NavigateToItemCommand = NavigateToItemCommand,
-            },
-            new ()
-            {
-                Name = "Continue Reading",
-                Items = ContinueReadingItems,
-                NavigateToItemCommand = NavigateToItemCommand,
-            },
-            new ()
-            {
-                Name = "Next Up",
-                Items = NextUpItems,
-                NavigateToItemCommand = NavigateToItemCommand,
-            }
-        ];
-    }
-
-    private async Task InitializeUserViewsAsync()
-    {
-        List<BaseItemDto> items = new();
-
-        BaseItemDtoQueryResult? result = await _jellyfinApiClient.UserViews.GetAsync();
-        if (result?.Items is not null)
+        Section?[] sections = await Task.WhenAll(sectionTasks);
+        foreach (Section? section in sections)
         {
-            foreach (BaseItemDto item in result.Items)
+            if (section is not null)
             {
-                if (!item.Id.HasValue)
-                {
-                    continue;
-                }
-
-                items.Add(item);
+                Sections.Add(section);
             }
         }
-
-        UserViews = new ObservableCollection<BaseItemDto>(items);
     }
 
-    private async Task InitializeContinueWatchingItemsAsync()
+    private async Task<Section?> GetUserViewsSectionAsync()
     {
-        List<BaseItemDto> items = await GetItemsToResumeAsync(MediaType.Video);
-        ContinueWatchingItems = new ObservableCollection<BaseItemDto>(items);
+        BaseItemDtoQueryResult? result = await _jellyfinApiClient.UserViews.GetAsync();
+        return CreateSection("My Media", result, CardShape.Backdrop, preferredImageType: null);
     }
 
-    private async Task InitializeContinueListeningItemsAsync()
+    private async Task<Section?> GetResumeSectionAsync(string name, MediaType mediaType)
     {
-        List<BaseItemDto> items = await GetItemsToResumeAsync(MediaType.Audio);
-        ContinueListeningItems = new ObservableCollection<BaseItemDto>(items);
-    }
-
-    private async Task InitializeContinueReadingItemsAsync()
-    {
-        List<BaseItemDto> items = await GetItemsToResumeAsync(MediaType.Book);
-        ContinueReadingItems = new ObservableCollection<BaseItemDto>(items);
-    }
-
-    private async Task<List<BaseItemDto>> GetItemsToResumeAsync(MediaType mediaType)
-    {
-        List<BaseItemDto> items = new();
-
         BaseItemDtoQueryResult? result = await _jellyfinApiClient.UserItems.Resume.GetAsync(requestConfig =>
         {
             requestConfig.QueryParameters.Limit = 12;
@@ -135,46 +63,54 @@ internal sealed partial class HomeViewModel : ObservableObject
             requestConfig.QueryParameters.EnableTotalRecordCount = false;
             requestConfig.QueryParameters.MediaTypes = [mediaType];
         });
-        if (result?.Items is not null)
-        {
-            foreach (BaseItemDto item in result.Items)
-            {
-                if (!item.Id.HasValue)
-                {
-                    continue;
-                }
 
-                items.Add(item);
-            }
-        }
-
-        return items;
+        return CreateSection(name, result, CardShape.Backdrop, ImageType.Thumb);
     }
 
-    private async Task InitializeNextUpItemsAsync()
+    private async Task<Section?> GetNextUpSectionAsync()
     {
-        List<BaseItemDto> items = new();
-
         BaseItemDtoQueryResult? result = await _jellyfinApiClient.Shows.NextUp.GetAsync();
-        if (result?.Items is not null)
-        {
-            foreach (BaseItemDto item in result.Items)
-            {
-                if (!item.Id.HasValue)
-                {
-                    continue;
-                }
+        return CreateSection("Next Up", result, CardShape.Backdrop, ImageType.Thumb);
+    }
 
-                items.Add(item);
-            }
+    private Section? CreateSection(
+        string name,
+        BaseItemDtoQueryResult? result,
+        CardShape cardShape,
+        ImageType? preferredImageType)
+    {
+        if (result?.Items is null)
+        {
+            return null;
         }
 
-        NextUpItems = new ObservableCollection<BaseItemDto>(items);
+        List<Card> cards = new(result.Items.Count);
+        foreach (BaseItemDto item in result.Items)
+        {
+            if (!item.Id.HasValue)
+            {
+                continue;
+            }
+
+            cards.Add(new Card
+            {
+                Item = item,
+                Shape = cardShape,
+                PreferredImageType = preferredImageType,
+            });
+        }
+
+        return new Section
+        {
+            Name = name,
+            Cards = cards,
+            NavigateToCardCommand = NavigateToCardCommand,
+        };
     }
 
     [RelayCommand]
-    private void NavigateToItem(BaseItemDto item)
+    private void NavigateToCard(Card card)
     {
-        _navigationManager.NavigateToItem(item);
+        _navigationManager.NavigateToItem(card.Item);
     }
 }
