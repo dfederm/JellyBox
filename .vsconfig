@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "components": [
+    "Microsoft.VisualStudio.Workload.ManagedDesktop",
+    "Microsoft.VisualStudio.ComponentGroup.WindowsAppSDK.Cs",
+    "Microsoft.VisualStudio.ComponentGroup.UWP.NetCoreAndStandard"
+  ]
+}
