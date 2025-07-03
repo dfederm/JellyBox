@@ -11,7 +11,7 @@
     <Canvas>
         <Image
             Stretch="Uniform"
-            Visibility="{x:Bind ViewModel.ShowBackdropImage, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"
+            Visibility="{x:Bind ViewModel.ShowBackdropImage, Mode=OneWay}"
             Canvas.ZIndex="200">
             <Image.Source>
                 <BitmapImage UriSource="{x:Bind ViewModel.BackdropImageUri, Mode=OneWay, FallbackValue=null}" />

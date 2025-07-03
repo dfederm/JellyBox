@@ -52,7 +52,7 @@
                     Margin="0 0 0 20" />
                 <TextBlock 
                     Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
-                    Visibility="{x:Bind ViewModel.ShowErrorMessage, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"
+                    Visibility="{x:Bind ViewModel.ShowErrorMessage, Mode=OneWay}"
                     HorizontalAlignment="Center"
                     TextAlignment="Center"
                     TextWrapping="Wrap"
@@ -67,7 +67,7 @@
                     Margin="0 0 0 10" />
                 <Button
                     Content="Use Quick Connect"
-                    Visibility="{x:Bind ViewModel.IsQuickConnectEnabled, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"
+                    Visibility="{x:Bind ViewModel.IsQuickConnectEnabled, Mode=OneWay}"
                     Command="{x:Bind ViewModel.QuickConnectCommand}"
                     IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
                     Style="{StaticResource SecondaryButton}"

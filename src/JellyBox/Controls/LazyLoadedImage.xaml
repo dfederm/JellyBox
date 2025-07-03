@@ -14,7 +14,7 @@
             Height="{x:Bind ViewModel.Height, Mode=OneWay}"
             Stretch="UniformToFill"
             Source="{x:Bind ViewModel.BlurHashImageSource, Mode=OneWay}"
-            Visibility="{x:Bind ViewModel.EnableBlurHash, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"
+            Visibility="{x:Bind ViewModel.EnableBlurHash, Mode=OneWay}"
             Canvas.ZIndex="0" />
         <Image
             Name="Image"

@@ -33,7 +33,7 @@
             </TextBox>
             <TextBlock 
                     Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
-                    Visibility="{x:Bind ViewModel.ShowErrorMessage, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}"
+                    Visibility="{x:Bind ViewModel.ShowErrorMessage, Mode=OneWay}"
                     HorizontalAlignment="Center"
                     TextAlignment="Center"
                     TextWrapping="Wrap"
