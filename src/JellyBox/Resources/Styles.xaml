@@ -4,8 +4,9 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:Converters="using:JellyBox.Converters">
 
-    <Converters:VisibleIfNotNullConverter x:Key="VisibleIfNotNullConverter" />
     <Converters:EmptyCollectionToVisibilityConverter x:Key="EmptyCollectionToVisibilityConverter" />
+    <Converters:NegateConverter x:Key="NegateConverter" />
+    <Converters:VisibleIfNotNullConverter x:Key="VisibleIfNotNullConverter" />
 
     <SolidColorBrush x:Key="Color0" Color="#101010" />
     <SolidColorBrush x:Key="Color10" Color="#202020" />

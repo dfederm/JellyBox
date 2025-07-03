@@ -24,7 +24,7 @@
             <TextBox
                     PlaceholderText="ex: 192.168.1.100:8096 or demo.jellyfin.org"
                     Text="{x:Bind ViewModel.ServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
+                    IsEnabled="{x:Bind ViewModel.ConnectCommand.IsRunning, Mode=OneWay, Converter={StaticResource NegateConverter}}"
                     Style="{StaticResource PrimaryTextBox}" 
                     Margin="0 8 0 8">
                 <Interactivity:Interaction.Behaviors>
@@ -43,7 +43,6 @@
             <Button 
                     Content="Connect"
                     Command="{x:Bind ViewModel.ConnectCommand}"
-                    IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
                     Style="{StaticResource PrimaryButton}" />
         </StackPanel>
     </Grid>

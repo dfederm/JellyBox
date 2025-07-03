@@ -16,9 +16,6 @@ internal sealed partial class ServerSelectionViewModel : ObservableObject
     private readonly NavigationManager _navigationManager;
 
     [ObservableProperty]
-    public partial bool IsInteractable { get; set; }
-
-    [ObservableProperty]
     public partial string ErrorMessage { get; set; } = string.Empty;
 
     [ObservableProperty]
@@ -42,8 +39,6 @@ internal sealed partial class ServerSelectionViewModel : ObservableObject
         {
             ServerUrl = _appSettings.ServerUrl;
         }
-
-        IsInteractable = true;
     }
 
     partial void OnServerUrlChanged(string value) => ConnectCommand.NotifyCanExecuteChanged();
@@ -53,61 +48,52 @@ internal sealed partial class ServerSelectionViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanConnect))]
     private async Task ConnectAsync()
     {
-        IsInteractable = false;
-        ShowErrorMessage = false;
+        if (!CanConnect())
+        {
+            UpdateErrorMessage("A Server URL is required");
+            return;
+        }
+
+        string serverUrl = ServerUrl;
+
+        // Add protocol if needed
+        if (!serverUrl.Contains("://", StringComparison.Ordinal))
+        {
+            serverUrl = "https://" + serverUrl;
+        }
+
+        if (!Uri.IsWellFormedUriString(serverUrl, UriKind.Absolute))
+        {
+            UpdateErrorMessage($"Invalid URL: {serverUrl}");
+            return;
+        }
+
+        _sdkClientSettings.SetServerUrl(serverUrl);
         try
         {
-            if (!CanConnect())
-            {
-                UpdateErrorMessage("A Server URL is required");
-                return;
-            }
-
-            string serverUrl = ServerUrl;
-
-            // Add protocol if needed
-            if (!serverUrl.Contains("://", StringComparison.Ordinal))
-            {
-                serverUrl = "https://" + serverUrl;
-            }
-
-            if (!Uri.IsWellFormedUriString(serverUrl, UriKind.Absolute))
-            {
-                UpdateErrorMessage($"Invalid URL: {serverUrl}");
-                return;
-            }
-
-            _sdkClientSettings.SetServerUrl(serverUrl);
-            try
-            {
-                // Get public system info to verify that the URL points to a Jellyfin server.
-                PublicSystemInfo? systemInfo = await _jellyfinApiClient.System.Info.Public.GetAsync();
-                Console.WriteLine($"Connected to {serverUrl}");
-                Console.WriteLine($"Server Name: {systemInfo?.ServerName}");
-                Console.WriteLine($"Server Version: {systemInfo?.Version}");
-            }
-            catch (Exception ex)
-            {
-                UpdateErrorMessage("We're unable to connect to the selected server right now. Please ensure it is running and try again.");
-#pragma warning disable CA1849 // Call async methods when in an async method
-                Console.Error.WriteLine($"Error connecting to {serverUrl}: {ex.Message}");
-#pragma warning restore CA1849 // Call async methods when in an async method
-                return;
-            }
-
-            // Save the URL in settings
-            _appSettings.ServerUrl = serverUrl;
-
-            // TODO: Go directly home if there are saved creds
-            _navigationManager.NavigateToLogin();
-
-            // Once we directly navigate home (see above), disallow accidentally coming back here.
-            ////_navigationManager.ClearBackStack();
+            // Get public system info to verify that the URL points to a Jellyfin server.
+            PublicSystemInfo? systemInfo = await _jellyfinApiClient.System.Info.Public.GetAsync();
+            Console.WriteLine($"Connected to {serverUrl}");
+            Console.WriteLine($"Server Name: {systemInfo?.ServerName}");
+            Console.WriteLine($"Server Version: {systemInfo?.Version}");
         }
-        finally
+        catch (Exception ex)
         {
-            IsInteractable = true;
+            UpdateErrorMessage("We're unable to connect to the selected server right now. Please ensure it is running and try again.");
+#pragma warning disable CA1849 // Call async methods when in an async method
+            Console.Error.WriteLine($"Error connecting to {serverUrl}: {ex.Message}");
+#pragma warning restore CA1849 // Call async methods when in an async method
+            return;
         }
+
+        // Save the URL in settings
+        _appSettings.ServerUrl = serverUrl;
+
+        // TODO: Go directly home if there are saved creds
+        _navigationManager.NavigateToLogin();
+
+        // Once we directly navigate home (see above), disallow accidentally coming back here.
+        ////_navigationManager.ClearBackStack();
     }
 
     private void UpdateErrorMessage(string message)
