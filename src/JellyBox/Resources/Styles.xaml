@@ -4,7 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:Converters="using:JellyBox.Converters">
 
-    <Converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     <Converters:VisibleIfNotNullConverter x:Key="VisibleIfNotNullConverter" />
     <Converters:EmptyCollectionToVisibilityConverter x:Key="EmptyCollectionToVisibilityConverter" />
 
