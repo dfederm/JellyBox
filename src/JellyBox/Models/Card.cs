@@ -51,7 +51,7 @@ internal sealed partial class Card : ObservableObject
 
         double aspectRatio = GetAspectRatio(Shape);
         ImageType imageType;
-        int imageWidth = 300;
+        int imageWidth = Shape == CardShape.Portrait ? 200 : 300;
 
         // TODO: A bunch of logic is missing here
         if (PreferredImageType == ImageType.Thumb
