@@ -18,6 +18,6 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Versioning (https://github.com/dotnet/Nerdbank.GitVersioning) -->
-    <GlobalPackageReference Include="Nerdbank.GitVersioning" Version="3.8.118" PrivateAssets="all" />
+    <GlobalPackageReference Include="Nerdbank.GitVersioning" Version="3.9.50" PrivateAssets="all" />
   </ItemGroup>
 </Project>
