@@ -31,14 +31,14 @@ jobs:
         run: msbuild -property:Configuration=Release -property:Platform=x64 -bl:logs/msbuild.binlog
 
       - name: Upload logs
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: logs
           path: ./logs
         if: ${{ always() }} # Always run this step even on failure
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: artifacts
           path: ./artifacts
