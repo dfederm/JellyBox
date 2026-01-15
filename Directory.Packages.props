@@ -14,7 +14,7 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="10.0.2" />
     <PackageVersion Include="Microsoft.UI.Xaml" Version="2.8.7" />
     <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.3650.58" />
-    <PackageVersion Include="Microsoft.Xaml.Behaviors.Uwp.Managed" Version="3.0.0" />
+    <PackageVersion Include="Microsoft.Xaml.Behaviors.Uwp.Managed" Version="3.0.1" />
   </ItemGroup>
   <ItemGroup>
     <!-- Versioning (https://github.com/dotnet/Nerdbank.GitVersioning) -->
