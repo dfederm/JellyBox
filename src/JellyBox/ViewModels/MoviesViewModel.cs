@@ -24,17 +24,15 @@ internal sealed partial class MoviesViewModel : ObservableObject
     {
         _jellyfinApiClient = jellyfinApiClient;
         _navigationManager = navigationManager;
-
-        InitializeMovies();
     }
 
     public void HandleParameters(Movies.Parameters parameters)
     {
         _collectionItemId = parameters.CollectionItemId;
-        InitializeMovies();
+        _ = InitializeMoviesAsync();
     }
 
-    private async void InitializeMovies()
+    private async Task InitializeMoviesAsync()
     {
         // Uninitialized
         if (_collectionItemId is null)

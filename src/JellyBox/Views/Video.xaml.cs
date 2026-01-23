@@ -17,9 +17,9 @@ internal sealed partial class Video : Page
 
     internal VideoViewModel ViewModel { get; }
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e) => await ViewModel.PlayVideoAsync((Parameters)e.Parameter, PlayerElement);
+    protected override void OnNavigatedTo(NavigationEventArgs e) => ViewModel.PlayVideo((Parameters)e.Parameter, PlayerElement);
 
-    protected override async void OnNavigatingFrom(NavigatingCancelEventArgs e) => await ViewModel.StopVideoAsync();
+    protected override void OnNavigatingFrom(NavigatingCancelEventArgs e) => ViewModel.StopVideo();
 
     internal sealed record Parameters(BaseItemDto Item, string? MediaSourceId, int? AudioStreamIndex, int? SubtitleStreamIndex);
 }

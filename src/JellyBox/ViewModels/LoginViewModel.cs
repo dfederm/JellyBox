@@ -60,9 +60,16 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
         _quickConnectPollingTimer?.Cancel();
     }
 
-    public async Task InitializeAsync()
+    public async void Initialize()
     {
-        IsQuickConnectEnabled = (await _jellyfinApiClient.QuickConnect.Enabled.GetAsync()).GetValueOrDefault();
+        try
+        {
+            IsQuickConnectEnabled = (await _jellyfinApiClient.QuickConnect.Enabled.GetAsync()).GetValueOrDefault();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in LoginViewModel.Initialize: {ex}");
+        }
     }
 
     partial void OnUserNameChanged(string value) => SignInCommand.NotifyCanExecuteChanged();
@@ -136,33 +143,42 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
             _quickConnectPollingTimer = ThreadPoolTimer.CreatePeriodicTimer(PollQuickConnectAsync, QuickConnectPollingInterval);
             async void PollQuickConnectAsync(ThreadPoolTimer _)
             {
-                QuickConnectResult? connectResult = await _jellyfinApiClient.QuickConnect.Connect.GetAsync(
-                    request =>
-                    {
-                        request.QueryParameters.Secret = initializeResult.Secret;
-                    },
-                    cancellationToken);
-                if (connectResult is null
-                    || !connectResult.Authenticated.GetValueOrDefault())
+                try
                 {
-                    return;
-                }
-
-                QuickConnectDto quickConnect = new()
-                {
-                    Secret = initializeResult.Secret,
-                };
-                AuthenticationResult? authenticationResult = await _jellyfinApiClient.Users.AuthenticateWithQuickConnect.PostAsync(quickConnect, cancellationToken: cancellationToken);
-
-                await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
-                    CoreDispatcherPriority.Normal,
-                    () =>
-                    {
-                        if (HandleAuthenticationResult(authenticationResult))
+                    QuickConnectResult? connectResult = await _jellyfinApiClient.QuickConnect.Connect.GetAsync(
+                        request =>
                         {
-                            quickConnectDialog.Hide();
-                        }
-                    });
+                            request.QueryParameters.Secret = initializeResult.Secret;
+                        },
+                        cancellationToken);
+                    if (connectResult is null
+                        || !connectResult.Authenticated.GetValueOrDefault())
+                    {
+                        return;
+                    }
+
+                    QuickConnectDto quickConnect = new()
+                    {
+                        Secret = initializeResult.Secret,
+                    };
+                    AuthenticationResult? authenticationResult = await _jellyfinApiClient.Users.AuthenticateWithQuickConnect.PostAsync(quickConnect, cancellationToken: cancellationToken);
+
+                    await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
+                        CoreDispatcherPriority.Normal,
+                        () =>
+                        {
+                            if (HandleAuthenticationResult(authenticationResult))
+                            {
+                                quickConnectDialog.Hide();
+                            }
+                        });
+                }
+                catch (Exception ex)
+                {
+                    // Timer callbacks with async void can crash the app if exceptions propagate.
+                    // Log and suppress to prevent app termination.
+                    System.Diagnostics.Debug.WriteLine($"Error in PollQuickConnectAsync: {ex}");
+                }
             }
 
             _ = await quickConnectDialog.ShowAsync();

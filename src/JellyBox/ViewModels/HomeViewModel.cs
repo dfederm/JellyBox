@@ -23,26 +23,33 @@ internal sealed partial class HomeViewModel : ObservableObject
         _navigationManager = navigationManager;
     }
 
-    public async Task InitializeAsync()
+    public async void Initialize()
     {
-        Task<Section?>[] sectionTasks =
-        [
-            GetUserViewsSectionAsync(),
-            GetResumeSectionAsync("Continue Watching", MediaType.Video),
-            GetResumeSectionAsync("Continue Listening", MediaType.Audio),
-            GetResumeSectionAsync("Continue Reading", MediaType.Book),
-            // TODO: LiveTV Section,
-            GetNextUpSectionAsync(),
-            // TODO: LatestMedia Sections
-        ];
-
-        Section?[] sections = await Task.WhenAll(sectionTasks);
-        foreach (Section? section in sections)
+        try
         {
-            if (section is not null)
+            Task<Section?>[] sectionTasks =
+            [
+                GetUserViewsSectionAsync(),
+                GetResumeSectionAsync("Continue Watching", MediaType.Video),
+                GetResumeSectionAsync("Continue Listening", MediaType.Audio),
+                GetResumeSectionAsync("Continue Reading", MediaType.Book),
+                // TODO: LiveTV Section,
+                GetNextUpSectionAsync(),
+                // TODO: LatestMedia Sections
+            ];
+
+            Section?[] sections = await Task.WhenAll(sectionTasks);
+            foreach (Section? section in sections)
             {
-                Sections.Add(section);
+                if (section is not null)
+                {
+                    Sections.Add(section);
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in HomeViewModel.Initialize: {ex}");
         }
     }
 

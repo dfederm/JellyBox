@@ -47,230 +47,244 @@ internal sealed partial class VideoViewModel : ObservableObject
 
     public bool ShowBackdropImage { get; set => SetProperty(ref field, value); }
 
-    public async Task PlayVideoAsync(Video.Parameters parameters, MediaPlayerElement playerElement)
+    public async void PlayVideo(Video.Parameters parameters, MediaPlayerElement playerElement)
     {
-        BaseItemDto item = parameters.Item;
-        _playerElement = playerElement;
-
-        DeviceProfile deviceProfile = _deviceProfileManager.Profile;
-
-        BackdropImageUri = _jellyfinApiClient.GetItemBackdropImageUrl(item, 1920);
-        ShowBackdropImage = true;
-
-        // Note: This mutates the shared device profile. That's probably OK as long as all accesses do this.
-        // TODO: Look into making a copy instead.
-        deviceProfile.MaxStreamingBitrate = await DetectBitrateAsync();
-
-        PlaybackInfoDto playbackInfo = new()
+        try
         {
-            DeviceProfile = deviceProfile,
-            MediaSourceId = parameters.MediaSourceId,
-            AudioStreamIndex = parameters.AudioStreamIndex,
-            SubtitleStreamIndex = parameters.SubtitleStreamIndex,
-        };
+            BaseItemDto item = parameters.Item;
+            _playerElement = playerElement;
 
-        // TODO: Does this create a play session? If so, update progress properly.
-        PlaybackInfoResponse? playbackInfoResponse = await _jellyfinApiClient.Items[item.Id!.Value].PlaybackInfo.PostAsync(playbackInfo);
+            DeviceProfile deviceProfile = _deviceProfileManager.Profile;
 
-        // TODO: Always the first? What if 0 or > 1?
-        MediaSourceInfo mediaSourceInfo = playbackInfoResponse!.MediaSources![0];
+            BackdropImageUri = _jellyfinApiClient.GetItemBackdropImageUrl(item, 1920);
+            ShowBackdropImage = true;
 
-        _playbackProgressInfo = new PlaybackProgressInfo
-        {
-            ItemId = item.Id.Value,
-            MediaSourceId = mediaSourceInfo.Id,
-            PlaySessionId = playbackInfoResponse.PlaySessionId,
-            AudioStreamIndex = playbackInfo.AudioStreamIndex,
-            SubtitleStreamIndex = playbackInfo.SubtitleStreamIndex,
-        };
+            // Note: This mutates the shared device profile. That's probably OK as long as all accesses do this.
+            // TODO: Look into making a copy instead.
+            deviceProfile.MaxStreamingBitrate = await DetectBitrateAsync();
 
-        bool isAdaptive;
-        Uri? mediaUri;
-
-        if (mediaSourceInfo.SupportsDirectPlay.GetValueOrDefault() || mediaSourceInfo.SupportsDirectStream.GetValueOrDefault())
-        {
-            RequestInformation request = _jellyfinApiClient.Videos[item.Id.Value].StreamWithContainer(mediaSourceInfo.Container).ToGetRequestInformation(
-                parameters =>
-                {
-                    parameters.QueryParameters.Static = true;
-                    parameters.QueryParameters.MediaSourceId = mediaSourceInfo.Id;
-
-                    // TODO Copied from AppServices. Get this in a better way, shared by the Jellyfin SDK settings initialization.
-                    parameters.QueryParameters.DeviceId = new EasClientDeviceInformation().Id.ToString();
-
-                    if (mediaSourceInfo.ETag is not null)
-                    {
-                        parameters.QueryParameters.Tag = mediaSourceInfo.ETag;
-                    }
-
-                    if (mediaSourceInfo.LiveStreamId is not null)
-                    {
-                        parameters.QueryParameters.LiveStreamId = mediaSourceInfo.LiveStreamId;
-                    }
-                });
-            mediaUri = _jellyfinApiClient.BuildUri(request);
-
-            // TODO: The Jellyfin SDK doesn't appear to provide a way to add this query param.
-            mediaUri = new Uri($"{mediaUri.AbsoluteUri}&api_key={_sdkClientSettings.AccessToken}");
-            isAdaptive = false;
-        }
-        else if (mediaSourceInfo.SupportsTranscoding.GetValueOrDefault())
-        {
-            if (!Uri.TryCreate(_sdkClientSettings.ServerUrl + mediaSourceInfo.TranscodingUrl, UriKind.Absolute, out mediaUri))
+            PlaybackInfoDto playbackInfo = new()
             {
-                // TODO: Error handling
-                return;
+                DeviceProfile = deviceProfile,
+                MediaSourceId = parameters.MediaSourceId,
+                AudioStreamIndex = parameters.AudioStreamIndex,
+                SubtitleStreamIndex = parameters.SubtitleStreamIndex,
+            };
+
+            // TODO: Does this create a play session? If so, update progress properly.
+            PlaybackInfoResponse? playbackInfoResponse = await _jellyfinApiClient.Items[item.Id!.Value].PlaybackInfo.PostAsync(playbackInfo);
+
+            // TODO: Always the first? What if 0 or > 1?
+            MediaSourceInfo mediaSourceInfo = playbackInfoResponse!.MediaSources![0];
+
+            _playbackProgressInfo = new PlaybackProgressInfo
+            {
+                ItemId = item.Id.Value,
+                MediaSourceId = mediaSourceInfo.Id,
+                PlaySessionId = playbackInfoResponse.PlaySessionId,
+                AudioStreamIndex = playbackInfo.AudioStreamIndex,
+                SubtitleStreamIndex = playbackInfo.SubtitleStreamIndex,
+            };
+
+            bool isAdaptive;
+            Uri? mediaUri;
+
+            if (mediaSourceInfo.SupportsDirectPlay.GetValueOrDefault() || mediaSourceInfo.SupportsDirectStream.GetValueOrDefault())
+            {
+                RequestInformation request = _jellyfinApiClient.Videos[item.Id.Value].StreamWithContainer(mediaSourceInfo.Container).ToGetRequestInformation(
+                    parameters =>
+                    {
+                        parameters.QueryParameters.Static = true;
+                        parameters.QueryParameters.MediaSourceId = mediaSourceInfo.Id;
+
+                        // TODO Copied from AppServices. Get this in a better way, shared by the Jellyfin SDK settings initialization.
+                        parameters.QueryParameters.DeviceId = new EasClientDeviceInformation().Id.ToString();
+
+                        if (mediaSourceInfo.ETag is not null)
+                        {
+                            parameters.QueryParameters.Tag = mediaSourceInfo.ETag;
+                        }
+
+                        if (mediaSourceInfo.LiveStreamId is not null)
+                        {
+                            parameters.QueryParameters.LiveStreamId = mediaSourceInfo.LiveStreamId;
+                        }
+                    });
+                mediaUri = _jellyfinApiClient.BuildUri(request);
+
+                // TODO: The Jellyfin SDK doesn't appear to provide a way to add this query param.
+                mediaUri = new Uri($"{mediaUri.AbsoluteUri}&api_key={_sdkClientSettings.AccessToken}");
+                isAdaptive = false;
             }
-
-            isAdaptive = mediaSourceInfo.TranscodingSubProtocol == MediaSourceInfo_TranscodingSubProtocol.Hls;
-        }
-        else
-        {
-            // TODO: Default handling
-            return;
-        }
-
-#pragma warning disable CA2000 // Dispose objects before losing scope. The media source is disposed in StopVideoAsync.
-        MediaSource mediaSource;
-        if (isAdaptive)
-        {
-            AdaptiveMediaSourceCreationResult result = await AdaptiveMediaSource.CreateFromUriAsync(mediaUri);
-            if (result.Status == AdaptiveMediaSourceCreationStatus.Success)
+            else if (mediaSourceInfo.SupportsTranscoding.GetValueOrDefault())
             {
-                AdaptiveMediaSource ams = result.MediaSource;
-                ams.InitialBitrate = ams.AvailableBitrates.Max();
+                if (!Uri.TryCreate(_sdkClientSettings.ServerUrl + mediaSourceInfo.TranscodingUrl, UriKind.Absolute, out mediaUri))
+                {
+                    // TODO: Error handling
+                    return;
+                }
 
-                mediaSource = MediaSource.CreateFromAdaptiveMediaSource(ams);
+                isAdaptive = mediaSourceInfo.TranscodingSubProtocol == MediaSourceInfo_TranscodingSubProtocol.Hls;
             }
             else
             {
-                // Fall back to creating from the Uri directly
-                mediaSource = MediaSource.CreateFromUri(mediaUri);
-            }
-        }
-        else
-        {
-            mediaSource = MediaSource.CreateFromUri(mediaUri);
-        }
-#pragma warning restore CA2000 // Dispose objects before losing scope
-
-        if (mediaSourceInfo.DefaultSubtitleStreamIndex.HasValue
-            && mediaSourceInfo.DefaultSubtitleStreamIndex.Value != -1)
-        {
-            MediaStream subtitleTrack = mediaSourceInfo.MediaStreams![mediaSourceInfo.DefaultSubtitleStreamIndex.Value];
-            if (subtitleTrack.IsExternal.GetValueOrDefault())
-            {
-                // TODO: Check the subtitle format (Codec property), as some mayneed to be handled differently.
-                string? subtitleUrl = subtitleTrack.DeliveryUrl;
-                if (!subtitleTrack.IsExternalUrl.GetValueOrDefault())
-                {
-                    subtitleUrl = _sdkClientSettings.ServerUrl + subtitleUrl;
-                }
-
-                if (Uri.TryCreate(subtitleUrl, UriKind.Absolute, out Uri? subtitleUri))
-                {
-                    TimedTextSource timedTextSource = TimedTextSource.CreateFromUri(subtitleUri);
-                    mediaSource.ExternalTimedTextSources.Add(timedTextSource);
-                }
-                else
-                {
-                    // TODO: Error handling
-                }
-            }
-        }
-
-        MediaPlaybackItem playbackItem = new(mediaSource);
-
-        // Present the first track, which is the subtitles
-        playbackItem.TimedMetadataTracksChanged += (sender, args) =>
-        {
-            playbackItem.TimedMetadataTracks.SetPresentationMode(0, TimedMetadataTrackPresentationMode.PlatformPresented);
-        };
-
-#pragma warning disable CA2000 // Dispose objects before losing scope. Disposed in StopVideoAsync.
-        _playerElement.SetMediaPlayer(new MediaPlayer());
-#pragma warning restore CA2000 // Dispose objects before losing scope
-        _playerElement.MediaPlayer.Source = playbackItem;
-
-        _playerElement.MediaPlayer.MediaEnded += async (mp, o) =>
-        {
-            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
-                CoreDispatcherPriority.Normal,
-                UpdatePositionTicks);
-
-            await ReportStoppedAsync();
-        };
-
-        _playerElement.MediaPlayer.PlaybackSession.PlaybackStateChanged += async (session, obj) =>
-        {
-            if (session.PlaybackState == MediaPlaybackState.None)
-            {
-                // The calls below throw in this scenario
+                // TODO: Default handling
                 return;
             }
 
-            if (session.PlaybackState == MediaPlaybackState.Playing && ShowBackdropImage)
+#pragma warning disable CA2000 // Dispose objects before losing scope. The media source is disposed in StopVideo.
+            MediaSource mediaSource;
+            if (isAdaptive)
+            {
+                AdaptiveMediaSourceCreationResult result = await AdaptiveMediaSource.CreateFromUriAsync(mediaUri);
+                if (result.Status == AdaptiveMediaSourceCreationStatus.Success)
+                {
+                    AdaptiveMediaSource ams = result.MediaSource;
+                    ams.InitialBitrate = ams.AvailableBitrates.Max();
+
+                    mediaSource = MediaSource.CreateFromAdaptiveMediaSource(ams);
+                }
+                else
+                {
+                    // Fall back to creating from the Uri directly
+                    mediaSource = MediaSource.CreateFromUri(mediaUri);
+                }
+            }
+            else
+            {
+                mediaSource = MediaSource.CreateFromUri(mediaUri);
+            }
+#pragma warning restore CA2000 // Dispose objects before losing scope
+
+            if (mediaSourceInfo.DefaultSubtitleStreamIndex.HasValue
+                && mediaSourceInfo.DefaultSubtitleStreamIndex.Value != -1)
+            {
+                MediaStream subtitleTrack = mediaSourceInfo.MediaStreams![mediaSourceInfo.DefaultSubtitleStreamIndex.Value];
+                if (subtitleTrack.IsExternal.GetValueOrDefault())
+                {
+                    // TODO: Check the subtitle format (Codec property), as some mayneed to be handled differently.
+                    string? subtitleUrl = subtitleTrack.DeliveryUrl;
+                    if (!subtitleTrack.IsExternalUrl.GetValueOrDefault())
+                    {
+                        subtitleUrl = _sdkClientSettings.ServerUrl + subtitleUrl;
+                    }
+
+                    if (Uri.TryCreate(subtitleUrl, UriKind.Absolute, out Uri? subtitleUri))
+                    {
+                        TimedTextSource timedTextSource = TimedTextSource.CreateFromUri(subtitleUri);
+                        mediaSource.ExternalTimedTextSources.Add(timedTextSource);
+                    }
+                    else
+                    {
+                        // TODO: Error handling
+                    }
+                }
+            }
+
+            MediaPlaybackItem playbackItem = new(mediaSource);
+
+            // Present the first track, which is the subtitles
+            playbackItem.TimedMetadataTracksChanged += (sender, args) =>
+            {
+                playbackItem.TimedMetadataTracks.SetPresentationMode(0, TimedMetadataTrackPresentationMode.PlatformPresented);
+            };
+
+#pragma warning disable CA2000 // Dispose objects before losing scope. Disposed in StopVideo.
+            _playerElement.SetMediaPlayer(new MediaPlayer());
+#pragma warning restore CA2000 // Dispose objects before losing scope
+            _playerElement.MediaPlayer.Source = playbackItem;
+
+            _playerElement.MediaPlayer.MediaEnded += async (mp, o) =>
             {
                 await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
                     CoreDispatcherPriority.Normal,
-                    () => ShowBackdropImage = false);
-            }
+                    UpdatePositionTicks);
 
-            _playbackProgressInfo.CanSeek = session.CanSeek;
-            _playbackProgressInfo.PositionTicks = session.Position.Ticks;
+                await ReportStoppedAsync();
+            };
 
-            if (session.PlaybackState == MediaPlaybackState.Playing)
+            _playerElement.MediaPlayer.PlaybackSession.PlaybackStateChanged += async (session, obj) =>
             {
-                _playbackProgressInfo.IsPaused = false;
-            }
-            else if (session.PlaybackState == MediaPlaybackState.Paused)
-            {
-                _playbackProgressInfo.IsPaused = true;
-            }
+                if (session.PlaybackState == MediaPlaybackState.None)
+                {
+                    // The calls below throw in this scenario
+                    return;
+                }
 
-            // TODO: Only update if something actually changed?
-            await ReportProgressAsync();
-        };
+                if (session.PlaybackState == MediaPlaybackState.Playing && ShowBackdropImage)
+                {
+                    await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
+                        CoreDispatcherPriority.Normal,
+                        () => ShowBackdropImage = false);
+                }
 
-        MediaStream videoStream = mediaSourceInfo.MediaStreams!.First(stream => stream.Type == MediaStream_Type.Video);
-        await DisplayModeManager.SetBestDisplayModeAsync(
-            (uint)videoStream.Width!.Value,
-            (uint)videoStream.Height!.Value,
-            (double)videoStream.RealFrameRate!.Value,
-            videoStream.VideoRangeType!.Value);
+                _playbackProgressInfo.CanSeek = session.CanSeek;
+                _playbackProgressInfo.PositionTicks = session.Position.Ticks;
 
-        _playerElement.MediaPlayer.Play();
+                if (session.PlaybackState == MediaPlaybackState.Playing)
+                {
+                    _playbackProgressInfo.IsPaused = false;
+                }
+                else if (session.PlaybackState == MediaPlaybackState.Paused)
+                {
+                    _playbackProgressInfo.IsPaused = true;
+                }
 
-        await ReportStartedAsync();
+                // TODO: Only update if something actually changed?
+                await ReportProgressAsync();
+            };
 
-        _progressTimer.Start();
+            MediaStream videoStream = mediaSourceInfo.MediaStreams!.First(stream => stream.Type == MediaStream_Type.Video);
+            await DisplayModeManager.SetBestDisplayModeAsync(
+                (uint)videoStream.Width!.Value,
+                (uint)videoStream.Height!.Value,
+                (double)videoStream.RealFrameRate!.Value,
+                videoStream.VideoRangeType!.Value);
+
+            _playerElement.MediaPlayer.Play();
+
+            await ReportStartedAsync();
+
+            _progressTimer.Start();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in PlayVideo: {ex}");
+        }
     }
 
-    public async Task StopVideoAsync()
+    public async void StopVideo()
     {
-        _progressTimer.Stop();
-
-        UpdatePositionTicks();
-
-        MediaPlayer? player = _playerElement?.MediaPlayer;
-        if (player is not null)
+        try
         {
-            player.Pause();
+            _progressTimer.Stop();
 
-            MediaPlaybackItem mediaPlaybackItem = (MediaPlaybackItem)player.Source;
+            UpdatePositionTicks();
 
-            // Detach components from each other
-            _playerElement!.SetMediaPlayer(null);
-            player.Source = null;
+            MediaPlayer? player = _playerElement?.MediaPlayer;
+            if (player is not null)
+            {
+                player.Pause();
 
-            // Dispose components
-            mediaPlaybackItem.Source.Dispose();
-            player.Dispose();
+                MediaPlaybackItem mediaPlaybackItem = (MediaPlaybackItem)player.Source;
+
+                // Detach components from each other
+                _playerElement!.SetMediaPlayer(null);
+                player.Source = null;
+
+                // Dispose components
+                mediaPlaybackItem.Source.Dispose();
+                player.Dispose();
+            }
+
+            await DisplayModeManager.SetDefaultDisplayModeAsync();
+
+            await ReportStoppedAsync();
         }
-
-        await DisplayModeManager.SetDefaultDisplayModeAsync();
-
-        await ReportStoppedAsync();
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in StopVideo: {ex}");
+        }
     }
 
     private async Task ReportStartedAsync()
@@ -326,13 +340,22 @@ internal sealed partial class VideoViewModel : ObservableObject
 
     private async void TimerTick()
     {
-        UpdatePositionTicks();
-
-        // Only report progress when playing.
-        if (_playerElement is not null
-            && _playerElement.MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
+        try
         {
-            await ReportProgressAsync();
+            UpdatePositionTicks();
+
+            // Only report progress when playing.
+            if (_playerElement is not null
+                && _playerElement.MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
+            {
+                await ReportProgressAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Timer callbacks with async void can crash the app if exceptions propagate.
+            // Log and suppress to prevent app termination.
+            System.Diagnostics.Debug.WriteLine($"Error in TimerTick: {ex}");
         }
     }
 

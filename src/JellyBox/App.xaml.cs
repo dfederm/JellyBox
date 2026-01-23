@@ -113,11 +113,24 @@ sealed partial class App : Application
 
             _navigationManager.Initialize(rootFrame);
 
-            // TODO: Do properly async. Or defer until it's needed?
-            Task.Run(_deviceProfileManager.InitializeAsync);
+            // Initialize the device profile asynchronously. If this fails, playback features may not work correctly.
+            _ = InitializeDeviceProfileAsync();
 
             // Ensure the current window is active
             Window.Current.Activate();
+        }
+    }
+
+    private async Task InitializeDeviceProfileAsync()
+    {
+        try
+        {
+            await _deviceProfileManager.InitializeAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log initialization failure but don't crash the app - playback will handle missing profile gracefully
+            System.Diagnostics.Debug.WriteLine($"Failed to initialize device profile: {ex}");
         }
     }
 

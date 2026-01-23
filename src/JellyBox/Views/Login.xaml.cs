@@ -14,9 +14,9 @@ internal sealed partial class Login : Page
         ViewModel = AppServices.Instance.ServiceProvider.GetRequiredService<LoginViewModel>();
     }
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        await ViewModel.InitializeAsync();
+        ViewModel.Initialize();
         base.OnNavigatedTo(e);
     }
 

@@ -28,7 +28,7 @@ internal sealed partial class MainPageViewModel : ObservableObject
         _jellyfinApiClient = jellyfinApiClient;
         _navigationManager = navigationManager;
 
-        InitializeNavigationItems();
+        _ = InitializeNavigationItemsAsync();
     }
 
     public void HandleParameters(MainPage.Parameters? parameters, Frame contentFrame)
@@ -77,7 +77,7 @@ internal sealed partial class MainPageViewModel : ObservableObject
         }
     }
 
-    private async void InitializeNavigationItems()
+    private async Task InitializeNavigationItemsAsync()
     {
         List<NavigationViewItemBase> navigationItems = new();
 
