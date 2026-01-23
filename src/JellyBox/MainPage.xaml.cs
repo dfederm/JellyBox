@@ -1,7 +1,6 @@
 ﻿using JellyBox.Services;
 using JellyBox.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Windows.UI.Core;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Navigation;
@@ -48,11 +47,10 @@ internal sealed partial class MainPage : Page
         base.OnNavigatedTo(e);
     }
 
-    private async void ContentFrameNavigated(object sender, NavigationEventArgs e)
+    private void ContentFrameNavigated(object sender, NavigationEventArgs e)
     {
-        // Update the selected item when a page navigation occurs in the body frame
-        await Dispatcher.RunAsync(
-            CoreDispatcherPriority.Normal,
+        _ = Dispatcher.RunAsync(
+            Windows.UI.Core.CoreDispatcherPriority.Normal,
             () =>
             {
                 ViewModel.IsMenuOpen = false;

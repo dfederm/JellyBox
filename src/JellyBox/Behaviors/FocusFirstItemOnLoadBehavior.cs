@@ -53,11 +53,19 @@ internal sealed class FocusFirstItemOnLoadBehavior : Behavior<ListViewBase>
 
     private async void CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        // TODO: This happens *every* time an item is added. How can we wait until it's stable?
-        DependencyObject firstItem = AssociatedObject.ContainerFromIndex(0);
-        if (firstItem is not null)
+        try
         {
-            await FocusManager.TryFocusAsync(firstItem, FocusState.Programmatic);
+            // TODO: This happens *every* time an item is added. How can we wait until it's stable?
+            DependencyObject firstItem = AssociatedObject.ContainerFromIndex(0);
+            if (firstItem is not null)
+            {
+                await FocusManager.TryFocusAsync(firstItem, FocusState.Programmatic);
+            }
+        }
+        catch (Exception ex)
+        {
+            // Prevent app crash from async void event handler
+            System.Diagnostics.Debug.WriteLine($"Error in CollectionChanged: {ex}");
         }
     }
 }

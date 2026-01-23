@@ -24,17 +24,15 @@ internal sealed partial class ShowsViewModel : ObservableObject
     {
         _jellyfinApiClient = jellyfinApiClient;
         _navigationManager = navigationManager;
-
-        InitializeShows();
     }
 
     public void HandleParameters(Shows.Parameters parameters)
     {
         _collectionItemId = parameters.CollectionItemId;
-        InitializeShows();
+        _ = InitializeShowsAsync();
     }
 
-    private async void InitializeShows()
+    private async Task InitializeShowsAsync()
     {
         // Uninitialized
         if (_collectionItemId is null)

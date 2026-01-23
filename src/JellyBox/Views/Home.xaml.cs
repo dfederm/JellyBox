@@ -14,10 +14,7 @@ internal sealed partial class Home : Page
         ViewModel = AppServices.Instance.ServiceProvider.GetRequiredService<HomeViewModel>();
     }
 
-    protected override async void OnNavigatedTo(NavigationEventArgs e)
-    {
-        await ViewModel.InitializeAsync();
-    }
+    protected override void OnNavigatedTo(NavigationEventArgs e) => ViewModel.Initialize();
 
     public HomeViewModel ViewModel { get; }
 }

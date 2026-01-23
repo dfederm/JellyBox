@@ -100,80 +100,87 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
     internal async void HandleParameters(ItemDetails.Parameters parameters)
     {
-        Item = await _jellyfinApiClient.Items[parameters.ItemId].GetAsync();
-
-        Name = Item!.Name;
-        BackdropImageUri = _jellyfinApiClient.GetItemBackdropImageUrl(Item, 1920);
-
-        List<MediaInfoItem> mediaInfo = new();
-        if (Item.ProductionYear.HasValue)
+        try
         {
-            mediaInfo.Add(new MediaInfoItem(Item.ProductionYear.Value.ToString()));
-        }
+            Item = await _jellyfinApiClient.Items[parameters.ItemId].GetAsync();
 
-        if (Item.RunTimeTicks.HasValue)
-        {
-            mediaInfo.Add(new MediaInfoItem(GetDisplayDuration(Item.RunTimeTicks.Value)));
-        }
+            Name = Item!.Name;
+            BackdropImageUri = _jellyfinApiClient.GetItemBackdropImageUrl(Item, 1920);
 
-        if (!string.IsNullOrEmpty(Item.OfficialRating))
-        {
-            // TODO: Style correctly
-            mediaInfo.Add(new MediaInfoItem(Item.OfficialRating));
-        }
-
-        if (Item.CommunityRating.HasValue)
-        {
-            // TODO: Style correctly
-            mediaInfo.Add(new MediaInfoItem(Item.CommunityRating.Value.ToString("F1")));
-        }
-
-        if (Item.CriticRating.HasValue)
-        {
-            // TODO: Style correctly
-            mediaInfo.Add(new MediaInfoItem(Item.CriticRating.Value.ToString()));
-        }
-
-        if (Item.RunTimeTicks.HasValue)
-        {
-            mediaInfo.Add(new MediaInfoItem(GetEndsAt(Item.RunTimeTicks.Value)));
-        }
-
-        MediaInfo = new ObservableCollection<MediaInfoItem>(mediaInfo);
-
-        if (Item.MediaSources is not null && Item.MediaSources.Count > 0)
-        {
-            SourceContainers = new ObservableCollection<MediaSourceInfoWrapper>(Item.MediaSources.Select(s => new MediaSourceInfoWrapper(s.Name!, s)));
-
-            // This will trigger OnSelectedSourceContainerChanged, which populates the video, audio, and subtitle drop-downs.
-            SelectedSourceContainer = SourceContainers[0];
-        }
-
-        TagLine = Item.Taglines is not null && Item.Taglines.Count > 0 ? Item.Taglines[0] : null;
-        Overview = Item.Overview;
-        Tags = Item.Tags is not null ? $"Tags: {string.Join(", ", Item.Tags)}" : null;
-
-        UpdateUserData();
-
-        Task<Section?>[] sectionTasks =
-        [
-            GetNextUpSectionAsync(),
-            GetChildrenSectionAsync(),
-            // TODO: Cast & Crew -->
-            // TODO: More Like This -->
-        ];
-
-        List<Section> sections = new(sectionTasks.Length);
-        foreach (Task<Section?> sectionTask in sectionTasks)
-        {
-            Section? section = await sectionTask;
-            if (section is not null)
+            List<MediaInfoItem> mediaInfo = new();
+            if (Item.ProductionYear.HasValue)
             {
-                sections.Add(section);
+                mediaInfo.Add(new MediaInfoItem(Item.ProductionYear.Value.ToString()));
             }
-        }
 
-        Sections = sections;
+            if (Item.RunTimeTicks.HasValue)
+            {
+                mediaInfo.Add(new MediaInfoItem(GetDisplayDuration(Item.RunTimeTicks.Value)));
+            }
+
+            if (!string.IsNullOrEmpty(Item.OfficialRating))
+            {
+                // TODO: Style correctly
+                mediaInfo.Add(new MediaInfoItem(Item.OfficialRating));
+            }
+
+            if (Item.CommunityRating.HasValue)
+            {
+                // TODO: Style correctly
+                mediaInfo.Add(new MediaInfoItem(Item.CommunityRating.Value.ToString("F1")));
+            }
+
+            if (Item.CriticRating.HasValue)
+            {
+                // TODO: Style correctly
+                mediaInfo.Add(new MediaInfoItem(Item.CriticRating.Value.ToString()));
+            }
+
+            if (Item.RunTimeTicks.HasValue)
+            {
+                mediaInfo.Add(new MediaInfoItem(GetEndsAt(Item.RunTimeTicks.Value)));
+            }
+
+            MediaInfo = new ObservableCollection<MediaInfoItem>(mediaInfo);
+
+            if (Item.MediaSources is not null && Item.MediaSources.Count > 0)
+            {
+                SourceContainers = new ObservableCollection<MediaSourceInfoWrapper>(Item.MediaSources.Select(s => new MediaSourceInfoWrapper(s.Name!, s)));
+
+                // This will trigger OnSelectedSourceContainerChanged, which populates the video, audio, and subtitle drop-downs.
+                SelectedSourceContainer = SourceContainers[0];
+            }
+
+            TagLine = Item.Taglines is not null && Item.Taglines.Count > 0 ? Item.Taglines[0] : null;
+            Overview = Item.Overview;
+            Tags = Item.Tags is not null ? $"Tags: {string.Join(", ", Item.Tags)}" : null;
+
+            UpdateUserData();
+
+            Task<Section?>[] sectionTasks =
+            [
+                GetNextUpSectionAsync(),
+                GetChildrenSectionAsync(),
+                // TODO: Cast & Crew -->
+                // TODO: More Like This -->
+            ];
+
+            List<Section> sections = new(sectionTasks.Length);
+            foreach (Task<Section?> sectionTask in sectionTasks)
+            {
+                Section? section = await sectionTask;
+                if (section is not null)
+                {
+                    sections.Add(section);
+                }
+            }
+
+            Sections = sections;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in HandleParameters: {ex}");
+        }
     }
 
     partial void OnSelectedSourceContainerChanged(MediaSourceInfoWrapper? value)
@@ -296,60 +303,81 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
     public async void PlayTrailer()
     {
-        if (Item is null)
+        try
         {
-            return;
-        }
+            if (Item is null)
+            {
+                return;
+            }
 
-        if (Item.LocalTrailerCount > 0)
-        {
-            List<BaseItemDto>? localTrailers = await _jellyfinApiClient.Items[Item.Id!.Value].LocalTrailers.GetAsync();
-            if (localTrailers is not null && localTrailers.Count > 0)
+            if (Item.LocalTrailerCount > 0)
+            {
+                List<BaseItemDto>? localTrailers = await _jellyfinApiClient.Items[Item.Id!.Value].LocalTrailers.GetAsync();
+                if (localTrailers is not null && localTrailers.Count > 0)
+                {
+                    // TODO play all the trailers instead of just the first?
+                    _navigationManager.NavigateToVideo(
+                        localTrailers[0],
+                        mediaSourceId: null,
+                        audioStreamIndex: null,
+                        subtitleStreamIndex: null);
+                    return;
+                }
+            }
+
+            if (Item.RemoteTrailers is not null && Item.RemoteTrailers.Count > 0)
             {
                 // TODO play all the trailers instead of just the first?
-                _navigationManager.NavigateToVideo(
-                    localTrailers[0],
-                    mediaSourceId: null,
-                    audioStreamIndex: null,
-                    subtitleStreamIndex: null);
+                Uri videoUri = GetWebVideoUri(Item.RemoteTrailers[0].Url!);
+
+                _navigationManager.NavigateToWebVideo(videoUri);
                 return;
             }
         }
-
-        if (Item.RemoteTrailers is not null && Item.RemoteTrailers.Count > 0)
+        catch (Exception ex)
         {
-            // TODO play all the trailers instead of just the first?
-            Uri videoUri = GetWebVideoUri(Item.RemoteTrailers[0].Url!);
-
-            _navigationManager.NavigateToWebVideo(videoUri);
-            return;
+            System.Diagnostics.Debug.WriteLine($"Error in PlayTrailer: {ex}");
         }
     }
 
     public async void TogglePlayed()
     {
-        if (Item is null)
+        try
         {
-            return;
-        }
+            if (Item is null)
+            {
+                return;
+            }
 
-        Item.UserData = Item.UserData!.Played.GetValueOrDefault()
-            ? await _jellyfinApiClient.UserPlayedItems[Item.Id!.Value].DeleteAsync()
-            : await _jellyfinApiClient.UserPlayedItems[Item.Id!.Value].PostAsync();
-        UpdateUserData();
+            Item.UserData = Item.UserData!.Played.GetValueOrDefault()
+                ? await _jellyfinApiClient.UserPlayedItems[Item.Id!.Value].DeleteAsync()
+                : await _jellyfinApiClient.UserPlayedItems[Item.Id!.Value].PostAsync();
+            UpdateUserData();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in TogglePlayed: {ex}");
+        }
     }
 
     public async void ToggleFavorite()
     {
-        if (Item is null)
+        try
         {
-            return;
-        }
+            if (Item is null)
+            {
+                return;
+            }
 
-        Item.UserData = Item.UserData!.IsFavorite.GetValueOrDefault()
-            ? await _jellyfinApiClient.UserFavoriteItems[Item.Id!.Value].DeleteAsync()
-            : await _jellyfinApiClient.UserFavoriteItems[Item.Id!.Value].PostAsync();
-        UpdateUserData();
+            Item.UserData = Item.UserData!.IsFavorite.GetValueOrDefault()
+                ? await _jellyfinApiClient.UserFavoriteItems[Item.Id!.Value].DeleteAsync()
+                : await _jellyfinApiClient.UserFavoriteItems[Item.Id!.Value].PostAsync();
+            UpdateUserData();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in ToggleFavorite: {ex}");
+        }
     }
 
     // Return a string in '{}h {}m' format for duration.
