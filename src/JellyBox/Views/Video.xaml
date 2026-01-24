@@ -3,16 +3,16 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:JellyBox.Views"
+    xmlns:controls="using:JellyBox.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="Black">
 
-    <Canvas>
+    <Grid>
         <Image
             Stretch="Uniform"
-            Visibility="{x:Bind ViewModel.ShowBackdropImage, Mode=OneWay}"
-            Canvas.ZIndex="200">
+            Visibility="{x:Bind ViewModel.ShowBackdropImage, Mode=OneWay}">
             <Image.Source>
                 <BitmapImage UriSource="{x:Bind ViewModel.BackdropImageUri, Mode=OneWay, FallbackValue=null}" />
             </Image.Source>
@@ -21,6 +21,20 @@
             x:Name="PlayerElement"
             Stretch="Uniform"
             AreTransportControlsEnabled="True"
-            Canvas.ZIndex="100" />
-    </Canvas>
+            AutoPlay="False">
+            <MediaPlayerElement.TransportControls>
+                <controls:CustomMediaTransportControls
+                    x:Name="TransportControls"
+                    IsCompact="False"
+                    IsSeekBarVisible="True"
+                    IsSeekEnabled="True"
+                    IsVolumeButtonVisible="True"
+                    IsVolumeEnabled="True"
+                    IsPlaybackRateButtonVisible="False"
+                    IsFullWindowButtonVisible="False"
+                    IsZoomButtonVisible="False"
+                    ShowAndHideAutomatically="True" />
+            </MediaPlayerElement.TransportControls>
+        </MediaPlayerElement>
+    </Grid>
 </Page>
