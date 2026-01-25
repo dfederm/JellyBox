@@ -1,0 +1,232 @@
+<ResourceDictionary
+    x:Class="JellyBox.Resources.TransportControlsStyles"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:JellyBox.Controls">
+
+    <!-- Custom Media Transport Controls Style -->
+    <Style TargetType="controls:CustomMediaTransportControls">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="UseSystemFocusVisuals" Value="False" />
+        <Setter Property="IsTextScaleFactorEnabled" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="controls:CustomMediaTransportControls">
+                    <Grid x:Name="RootGrid"
+                          Background="Transparent">
+                        <Grid.Resources>
+                            <!-- Transport button style for AppBarButton -->
+                            <Style x:Key="TransportButtonStyle" TargetType="AppBarButton">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="Foreground" Value="White" />
+                                <Setter Property="Width" Value="48" />
+                                <Setter Property="Height" Value="48" />
+                                <Setter Property="Margin" Value="4,0" />
+                                <Setter Property="LabelPosition" Value="Collapsed" />
+                            </Style>
+                            <!-- Transport button style for regular Button (no dropdown arrow) -->
+                            <Style x:Key="TransportIconButtonStyle" TargetType="Button">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="Foreground" Value="White" />
+                                <Setter Property="BorderBrush" Value="Transparent" />
+                                <Setter Property="Width" Value="48" />
+                                <Setter Property="Height" Value="48" />
+                                <Setter Property="Margin" Value="4,0" />
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                            </Style>
+                        </Grid.Resources>
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <!-- Buffering indicator (centered) -->
+                        <ProgressRing x:Name="BufferingProgressRing"
+                                      Grid.Row="0"
+                                      Width="60"
+                                      Height="60"
+                                      IsActive="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=IsBuffering}"
+                                      Foreground="White"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+
+                        <!-- Gradient background for controls -->
+                        <Border Grid.Row="1"
+                                Background="{ThemeResource SystemControlBackgroundChromeMediumLowBrush}"
+                                Opacity="0.9">
+                            <Grid Padding="16,8">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <!-- Progress/Seek bar row -->
+                                <Grid Grid.Row="0" Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Current time -->
+                                    <TextBlock x:Name="TimeElapsedElement"
+                                               Grid.Column="0"
+                                               Foreground="White"
+                                               VerticalAlignment="Center"
+                                               FontSize="14"
+                                               Margin="0,0,12,0"
+                                               Text="0:00" />
+
+                                    <!-- Seek slider -->
+                                    <Slider x:Name="ProgressSlider"
+                                            Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            IsThumbToolTipEnabled="True"
+                                            XYFocusKeyboardNavigation="Enabled" />
+
+                                    <!-- Total time -->
+                                    <TextBlock x:Name="TimeRemainingElement"
+                                               Grid.Column="2"
+                                               Foreground="White"
+                                               VerticalAlignment="Center"
+                                               FontSize="14"
+                                               Margin="12,0,0,0"
+                                               Text="0:00" />
+                                </Grid>
+
+                                <!-- Controls row -->
+                                <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Left side: Playback controls and Ends at -->
+                                    <StackPanel Grid.Column="0"
+                                                Orientation="Horizontal"
+                                                VerticalAlignment="Center">
+                                        <!-- Rewind 10s -->
+                                        <AppBarButton x:Name="CustomRewindButton"
+                                                      Style="{StaticResource TransportButtonStyle}"
+                                                      Label="Rewind"
+                                                      Command="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=RewindCommand}"
+                                                      ToolTipService.ToolTip="Rewind 10 seconds (LB)"
+                                                      XYFocusKeyboardNavigation="Enabled">
+                                            <AppBarButton.Icon>
+                                                <FontIcon Glyph="&#xED3C;" FontFamily="Segoe MDL2 Assets" />
+                                            </AppBarButton.Icon>
+                                        </AppBarButton>
+
+                                        <!-- Play/Pause -->
+                                        <AppBarButton x:Name="CustomPlayPauseButton"
+                                                      Style="{StaticResource TransportButtonStyle}"
+                                                      Label="Play"
+                                                      Command="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=PlayPauseCommand}"
+                                                      ToolTipService.ToolTip="Play/Pause (Space)"
+                                                      XYFocusKeyboardNavigation="Enabled">
+                                            <AppBarButton.Icon>
+                                                <FontIcon x:Name="CustomPlayPauseIcon" Glyph="&#xE768;" FontFamily="Segoe MDL2 Assets" />
+                                            </AppBarButton.Icon>
+                                        </AppBarButton>
+
+                                        <!-- Fast Forward 30s -->
+                                        <AppBarButton x:Name="CustomFastForwardButton"
+                                                      Style="{StaticResource TransportButtonStyle}"
+                                                      Label="Fast Forward"
+                                                      Command="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=FastForwardCommand}"
+                                                      ToolTipService.ToolTip="Fast forward 30 seconds (RB)"
+                                                      XYFocusKeyboardNavigation="Enabled">
+                                            <AppBarButton.Icon>
+                                                <FontIcon Glyph="&#xED3D;" FontFamily="Segoe MDL2 Assets" />
+                                            </AppBarButton.Icon>
+                                        </AppBarButton>
+
+                                        <!-- Ends at text -->
+                                        <TextBlock x:Name="EndsAtTextBlock"
+                                                   Foreground="#AAAAAA"
+                                                   FontSize="14"
+                                                   VerticalAlignment="Center"
+                                                   Margin="16,0,0,0"
+                                                   Text="Ends at --:--" />
+                                    </StackPanel>
+
+                                    <!-- Right side: Volume and additional controls -->
+                                    <StackPanel Grid.Column="2"
+                                                Orientation="Horizontal"
+                                                HorizontalAlignment="Right">
+                                        <!-- Favorite button -->
+                                        <Button x:Name="FavoriteButton"
+                                                Style="{StaticResource TransportIconButtonStyle}"
+                                                Command="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ToggleFavoriteCommand}"
+                                                ToolTipService.ToolTip="Add to favorites (F)"
+                                                XYFocusKeyboardNavigation="Enabled">
+                                            <FontIcon x:Name="FavoriteIcon" Glyph="&#xEB51;" FontFamily="Segoe MDL2 Assets" />
+                                        </Button>
+
+                                        <!-- Volume -->
+                                        <Button x:Name="CustomVolumeButton"
+                                                Style="{StaticResource TransportIconButtonStyle}"
+                                                Command="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ToggleMuteCommand}"
+                                                ToolTipService.ToolTip="Toggle mute (M)"
+                                                XYFocusKeyboardNavigation="Enabled">
+                                            <FontIcon x:Name="CustomVolumeIcon" Glyph="&#xE767;" FontFamily="Segoe MDL2 Assets" />
+                                            <Button.Flyout>
+                                                <Flyout Placement="Top">
+                                                    <StackPanel Orientation="Vertical" Width="48">
+                                                        <Slider x:Name="CustomVolumeSlider"
+                                                                Height="120"
+                                                                Minimum="0"
+                                                                Maximum="100"
+                                                                Value="100"
+                                                                Orientation="Vertical" />
+                                                    </StackPanel>
+                                                </Flyout>
+                                            </Button.Flyout>
+                                        </Button>
+
+                                        <!-- Subtitles -->
+                                        <Button x:Name="CustomSubtitlesButton"
+                                                Style="{StaticResource TransportIconButtonStyle}"
+                                                ToolTipService.ToolTip="Subtitle track (C)"
+                                                XYFocusKeyboardNavigation="Enabled">
+                                            <FontIcon Glyph="&#xED1E;" FontFamily="Segoe MDL2 Assets" />
+                                        </Button>
+
+                                        <!-- Audio tracks -->
+                                        <Button x:Name="CustomAudioTracksButton"
+                                                Style="{StaticResource TransportIconButtonStyle}"
+                                                ToolTipService.ToolTip="Audio track (A)"
+                                                XYFocusKeyboardNavigation="Enabled">
+                                            <FontIcon Glyph="&#xE8D6;" FontFamily="Segoe MDL2 Assets" />
+                                        </Button>
+
+                                        <!-- Settings -->
+                                        <Button x:Name="SettingsButton"
+                                                Style="{StaticResource TransportIconButtonStyle}"
+                                                ToolTipService.ToolTip="Playback settings"
+                                                XYFocusKeyboardNavigation="Enabled">
+                                            <FontIcon Glyph="&#xE713;" FontFamily="Segoe MDL2 Assets" />
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="ControlPanelVisibilityStates">
+                                <VisualState x:Name="ControlPanelFadeIn" />
+                                <VisualState x:Name="ControlPanelFadeOut" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+</ResourceDictionary>

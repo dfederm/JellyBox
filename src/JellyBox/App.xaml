@@ -9,6 +9,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <resources:Styles />
                 <resources:Templates />
+                <resources:TransportControlsStyles />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
