@@ -22,9 +22,10 @@ namespace JellyBox.ViewModels;
 
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes. Used via dependency injection.
 internal sealed partial class VideoViewModel : ObservableObject
-#pragma warning disable CA1812 // Avoid uninstantiated internal classes
+#pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
     private readonly JellyfinApiClient _jellyfinApiClient;
+    private readonly JellyfinImageResolver _imageResolver;
     private readonly JellyfinSdkSettings _sdkClientSettings;
     private readonly DeviceProfileManager _deviceProfileManager;
     private readonly DispatcherTimer _progressTimer;
@@ -37,10 +38,12 @@ internal sealed partial class VideoViewModel : ObservableObject
 
     public VideoViewModel(
         JellyfinApiClient jellyfinApiClient,
+        JellyfinImageResolver imageResolver,
         JellyfinSdkSettings sdkClientSettings,
         DeviceProfileManager deviceProfileManager)
     {
         _jellyfinApiClient = jellyfinApiClient;
+        _imageResolver = imageResolver;
         _sdkClientSettings = sdkClientSettings;
         _deviceProfileManager = deviceProfileManager;
 
@@ -255,7 +258,7 @@ internal sealed partial class VideoViewModel : ObservableObject
 
             DeviceProfile deviceProfile = _deviceProfileManager.Profile;
 
-            BackdropImageUri = _jellyfinApiClient.GetItemBackdropImageUrl(item, 1920);
+            BackdropImageUri = _imageResolver.GetBackdropImageUri(item, 1920);
             ShowBackdropImage = true;
 
             // Note: This mutates the shared device profile. That's probably OK as long as all accesses do this.

@@ -42,8 +42,8 @@
                 <Grid>
                     <uc:LazyLoadedImage
                         Grid.Row="1"
-                        Item="{x:Bind ViewModel.Item, Mode=OneWay}"
-                        ImageType="Primary"
+                        ImageUri="{x:Bind ViewModel.PrimaryImage.Uri, Mode=OneWay}"
+                        BlurHash="{x:Bind ViewModel.PrimaryImage.BlurHash, Mode=OneWay}"
                         Width="300"
                         Height="450"
                         VerticalAlignment="Top"
@@ -55,9 +55,7 @@
                         Orientation="Vertical"
                         Canvas.ZIndex="100">
                         <uc:LazyLoadedImage
-                            Item="{x:Bind ViewModel.Item, Mode=OneWay}"
-                            ImageType="Logo"
-                            EnableBlurHash="False"
+                            ImageUri="{x:Bind ViewModel.LogoImageUri, Mode=OneWay}"
                             Width="300"
                             Height="175"
                             Margin="0 50 400 50"

@@ -61,11 +61,11 @@ internal sealed class AppServices
         serviceCollection.AddSingleton<AppSettings>();
         serviceCollection.AddSingleton<NavigationManager>();
         serviceCollection.AddSingleton<DeviceProfileManager>();
+        serviceCollection.AddSingleton<JellyfinImageResolver>();
 
         // View Models
         serviceCollection.AddTransient<HomeViewModel>();
         serviceCollection.AddTransient<ItemDetailsViewModel>();
-        serviceCollection.AddTransient<LazyLoadedImageViewModel>();
         serviceCollection.AddTransient<LoginViewModel>();
         serviceCollection.AddTransient<MainPageViewModel>();
         serviceCollection.AddTransient<MoviesViewModel>();

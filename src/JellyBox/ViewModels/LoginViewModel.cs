@@ -12,7 +12,7 @@ namespace JellyBox.ViewModels;
 
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes. Used via dependency injection.
 internal sealed partial class LoginViewModel : ObservableObject, IDisposable
-#pragma warning disable CA1812 // Avoid uninstantiated internal classes
+#pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
     private static readonly TimeSpan QuickConnectPollingInterval = TimeSpan.FromSeconds(5);
 
