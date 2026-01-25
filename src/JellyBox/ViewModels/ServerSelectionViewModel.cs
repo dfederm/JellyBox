@@ -8,7 +8,7 @@ namespace JellyBox.ViewModels;
 
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes. Used via dependency injection.
 internal sealed partial class ServerSelectionViewModel : ObservableObject
-#pragma warning disable CA1812 // Avoid uninstantiated internal classes
+#pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
     private readonly AppSettings _appSettings;
     private readonly JellyfinSdkSettings _sdkClientSettings;

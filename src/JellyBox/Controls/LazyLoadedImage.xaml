@@ -2,7 +2,6 @@
     x:Class="JellyBox.Controls.LazyLoadedImage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:local="using:JellyBox.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
@@ -10,23 +9,20 @@
     d:DesignWidth="400">
     <Canvas>
         <Image
-            Width="{x:Bind ViewModel.Width, Mode=OneWay}"
-            Height="{x:Bind ViewModel.Height, Mode=OneWay}"
+            Width="{x:Bind Width, Mode=OneWay}"
+            Height="{x:Bind Height, Mode=OneWay}"
             Stretch="UniformToFill"
-            Source="{x:Bind ViewModel.BlurHashImageSource, Mode=OneWay}"
-            Visibility="{x:Bind ViewModel.EnableBlurHash, Mode=OneWay}"
+            Source="{x:Bind BlurHashImageSource, Mode=OneWay}"
             Canvas.ZIndex="0" />
         <Image
             Name="Image"
-            Width="{x:Bind ViewModel.Width, Mode=OneWay}"
-            Height="{x:Bind ViewModel.Height, Mode=OneWay}"
+            Width="{x:Bind Width, Mode=OneWay}"
+            Height="{x:Bind Height, Mode=OneWay}"
             Canvas.ZIndex="1"
             Opacity="0"
             ImageOpened="ImageOpened">
             <Image.Source>
-                <BitmapImage
-                    UriSource="{x:Bind ViewModel.ImageUri, Mode=OneWay}"
-                    CreateOptions="IgnoreImageCache" />
+                <BitmapImage UriSource="{x:Bind ImageUri, Mode=OneWay}" />
             </Image.Source>
         </Image>
     </Canvas>

@@ -40,12 +40,12 @@
         <StackPanel
         Padding="0 5 0 5">
             <controls:LazyLoadedImage
-                Item="{x:Bind Item, Mode=OneWay}"
-                ImageType="{x:Bind ImageType, Mode=OneWay}"
-                Width="{x:Bind ImageWidth, Mode=OneWay}"
-                Height="{x:Bind ImageHeight, Mode=OneWay}" />
+                ImageUri="{x:Bind Image.Uri}"
+                BlurHash="{x:Bind Image.BlurHash}"
+                Width="{x:Bind ImageWidth}"
+                Height="{x:Bind ImageHeight}" />
             <TextBlock
-                Text="{x:Bind Name, Mode=OneWay}"
+                Text="{x:Bind Name}"
                 TextAlignment="Center"
                 FontSize="{StaticResource FontM}"
                 Padding="0 5 0 0" />

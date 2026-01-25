@@ -10,16 +10,21 @@ namespace JellyBox.ViewModels;
 
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes. Used via dependency injection.
 internal sealed partial class HomeViewModel : ObservableObject
-#pragma warning disable CA1812 // Avoid uninstantiated internal classes
+#pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
     private readonly JellyfinApiClient _jellyfinApiClient;
+    private readonly JellyfinImageResolver _imageResolver;
     private readonly NavigationManager _navigationManager;
 
     public ObservableCollection<Section> Sections { get; } = new();
 
-    public HomeViewModel(JellyfinApiClient jellyfinApiClient, NavigationManager navigationManager)
+    public HomeViewModel(
+        JellyfinApiClient jellyfinApiClient,
+        JellyfinImageResolver imageResolver,
+        NavigationManager navigationManager)
     {
         _jellyfinApiClient = jellyfinApiClient;
+        _imageResolver = imageResolver;
         _navigationManager = navigationManager;
     }
 
@@ -99,12 +104,7 @@ internal sealed partial class HomeViewModel : ObservableObject
                 continue;
             }
 
-            cards.Add(new Card
-            {
-                Item = item,
-                Shape = cardShape,
-                PreferredImageType = preferredImageType,
-            });
+            cards.Add(CardFactory.CreateFromItem(item, cardShape, preferredImageType, _imageResolver));
         }
 
         return new Section

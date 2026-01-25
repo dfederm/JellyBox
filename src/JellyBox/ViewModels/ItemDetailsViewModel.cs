@@ -24,12 +24,13 @@ internal sealed record MediaSourceInfoWrapper(string DisplayText, MediaSourceInf
 
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes. Used via dependency injection.
 internal sealed partial class ItemDetailsViewModel : ObservableObject
-#pragma warning disable CA1812 // Avoid uninstantiated internal classes
+#pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
     private static readonly SolidColorBrush OnBrush = new SolidColorBrush(Colors.Red);
     private static readonly SolidColorBrush OffBrush = new SolidColorBrush(Colors.White);
 
     private readonly JellyfinApiClient _jellyfinApiClient;
+    private readonly JellyfinImageResolver _imageResolver;
     private readonly NavigationManager _navigationManager;
 
     [ObservableProperty]
@@ -40,6 +41,12 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
     [ObservableProperty]
     public partial Uri? BackdropImageUri { get; set; }
+
+    [ObservableProperty]
+    public partial JellyfinImage PrimaryImage { get; set; }
+
+    [ObservableProperty]
+    public partial Uri? LogoImageUri { get; set; }
 
     [ObservableProperty]
     public partial ObservableCollection<MediaInfoItem>? MediaInfo { get; set; }
@@ -92,9 +99,13 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
     [ObservableProperty]
     public partial List<Section>? Sections { get; set; }
 
-    public ItemDetailsViewModel(JellyfinApiClient jellyfinApiClient, NavigationManager navigationManager)
+    public ItemDetailsViewModel(
+        JellyfinApiClient jellyfinApiClient,
+        JellyfinImageResolver imageResolver,
+        NavigationManager navigationManager)
     {
         _jellyfinApiClient = jellyfinApiClient;
+        _imageResolver = imageResolver;
         _navigationManager = navigationManager;
     }
 
@@ -105,7 +116,11 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             Item = await _jellyfinApiClient.Items[parameters.ItemId].GetAsync();
 
             Name = Item!.Name;
-            BackdropImageUri = _jellyfinApiClient.GetItemBackdropImageUrl(Item, 1920);
+            BackdropImageUri = _imageResolver.GetBackdropImageUri(Item, 1920);
+
+            // TODO: Consolidate hard-coded dimensions with XAML.
+            PrimaryImage = _imageResolver.ResolveImage(Item, ImageType.Primary, 300, 450);
+            LogoImageUri = _imageResolver.ResolveImage(Item, ImageType.Logo, 300, 175).Uri;
 
             List<MediaInfoItem> mediaInfo = new();
             if (Item.ProductionYear.HasValue)
@@ -454,13 +469,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
                 continue;
             }
 
-            Card card = new()
-            {
-                Item = item,
-                Shape = CardShape.Backdrop,
-                PreferredImageType = ImageType.Thumb,
-            };
-            cards.Add(card);
+            cards.Add(CardFactory.CreateFromItem(item, CardShape.Backdrop, ImageType.Thumb, _imageResolver));
         }
 
         return new Section
@@ -553,13 +562,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
                 continue;
             }
 
-            Card card = new()
-            {
-                Item = item,
-                Shape = cardShape,
-                PreferredImageType = ImageType.Thumb,
-            };
-            cards.Add(card);
+            cards.Add(CardFactory.CreateFromItem(item, cardShape, ImageType.Thumb, _imageResolver));
         }
 
         // TODO: Support list view for Type == MusicAlbum | Season
