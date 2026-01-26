@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using JellyBox.Models;
 using JellyBox.Services;
 using JellyBox.Views;
@@ -66,14 +65,8 @@ internal sealed partial class MoviesViewModel : ObservableObject
                     continue;
                 }
 
-                Movies.Add(CardFactory.CreateFromItem(item, CardShape.Portrait, preferredImageType: null, _imageResolver));
+                Movies.Add(CardFactory.CreateFromItem(item, CardShape.Portrait, preferredImageType: null, _imageResolver, _navigationManager));
             }
         }
-    }
-
-    [RelayCommand]
-    private void NavigateToCard(Card card)
-    {
-        _navigationManager.NavigateToItem(card.Item);
     }
 }

@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.Input;
 using JellyBox.Services;
 using Jellyfin.Sdk.Generated.Models;
 
@@ -9,7 +10,8 @@ internal static class CardFactory
         BaseItemDto item,
         CardShape shape,
         ImageType? preferredImageType,
-        JellyfinImageResolver imageResolver)
+        JellyfinImageResolver imageResolver,
+        NavigationManager navigationManager)
     {
         double aspectRatio = GetAspectRatio(shape);
         ImageType imageType;
@@ -50,11 +52,11 @@ internal static class CardFactory
 
         return new Card
         {
-            Item = item,
             Name = item.Name!,
             ImageWidth = imageWidth,
             ImageHeight = imageHeight,
             Image = image,
+            NavigateCommand = new RelayCommand(() => navigationManager.NavigateToItem(item)),
         };
     }
 

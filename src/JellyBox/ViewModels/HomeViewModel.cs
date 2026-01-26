@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using JellyBox.Models;
 using JellyBox.Services;
 using Jellyfin.Sdk;
@@ -104,20 +103,13 @@ internal sealed partial class HomeViewModel : ObservableObject
                 continue;
             }
 
-            cards.Add(CardFactory.CreateFromItem(item, cardShape, preferredImageType, _imageResolver));
+            cards.Add(CardFactory.CreateFromItem(item, cardShape, preferredImageType, _imageResolver, _navigationManager));
         }
 
         return new Section
         {
             Name = name,
             Cards = cards,
-            NavigateToCardCommand = NavigateToCardCommand,
         };
-    }
-
-    [RelayCommand]
-    private void NavigateToCard(Card card)
-    {
-        _navigationManager.NavigateToItem(card.Item);
     }
 }
