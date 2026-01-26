@@ -31,6 +31,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly JellyfinImageResolver _imageResolver;
     private readonly NavigationManager _navigationManager;
+    private readonly CardFactory _cardFactory;
 
     [ObservableProperty]
     public partial BaseItemDto? Item { get; set; }
@@ -101,11 +102,13 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
     public ItemDetailsViewModel(
         JellyfinApiClient jellyfinApiClient,
         JellyfinImageResolver imageResolver,
-        NavigationManager navigationManager)
+        NavigationManager navigationManager,
+        CardFactory cardFactory)
     {
         _jellyfinApiClient = jellyfinApiClient;
         _imageResolver = imageResolver;
         _navigationManager = navigationManager;
+        _cardFactory = cardFactory;
     }
 
     internal async void HandleParameters(ItemDetails.Parameters parameters)
@@ -468,7 +471,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
                 continue;
             }
 
-            cards.Add(CardFactory.CreateFromItem(item, CardShape.Backdrop, ImageType.Thumb, _imageResolver, _navigationManager));
+            cards.Add(_cardFactory.CreateFromItem(item, CardShape.Backdrop, ImageType.Thumb));
         }
 
         return new Section
@@ -560,7 +563,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
                 continue;
             }
 
-            cards.Add(CardFactory.CreateFromItem(item, cardShape, ImageType.Thumb, _imageResolver, _navigationManager));
+            cards.Add(_cardFactory.CreateFromItem(item, cardShape, ImageType.Thumb));
         }
 
         // TODO: Support list view for Type == MusicAlbum | Season
