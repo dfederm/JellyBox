@@ -105,7 +105,8 @@
                                 Orientation="Horizontal">
                                 <Button 
                                     Margin="0 8 0 8"
-                                    Click="{x:Bind ViewModel.Play}">
+                                    Click="{x:Bind ViewModel.Play}"
+                                    Visibility="{x:Bind ViewModel.CanPlay, Mode=OneWay}">
                                     <Interactivity:Interaction.Behaviors>
                                         <Behaviors:FocusOnLoadBehavior />
                                     </Interactivity:Interaction.Behaviors>
@@ -113,19 +114,22 @@
                                 </Button>
                                 <Button
                                     Margin="0 8 0 8"
-                                    Click="{x:Bind ViewModel.PlayTrailer}">
+                                    Click="{x:Bind ViewModel.PlayTrailer}"
+                                    Visibility="{x:Bind ViewModel.HasTrailer, Mode=OneWay}">
                                     <SymbolIcon Symbol="SlideShow" />
                                 </Button>
                                 <Button
                                     Margin="0 8 0 8"
-                                    Click="{x:Bind ViewModel.TogglePlayed}">
+                                    Click="{x:Bind ViewModel.TogglePlayed}"
+                                    Visibility="{x:Bind ViewModel.CanMarkPlayed, Mode=OneWay}">
                                     <SymbolIcon
                                         Symbol="Accept"
                                         Foreground="{x:Bind ViewModel.PlayStateBrush, Mode=OneWay}" />
                                 </Button>
                                 <Button
                                     Margin="0 8 0 8"
-                                    Click="{x:Bind ViewModel.ToggleFavorite}">
+                                    Click="{x:Bind ViewModel.ToggleFavorite}"
+                                    Visibility="{x:Bind ViewModel.CanMarkFavorite, Mode=OneWay}">
                                     <SymbolIcon
                                         Symbol="Favorite"
                                         Foreground="{x:Bind ViewModel.FavoriteBrush, Mode=OneWay}" />

@@ -99,6 +99,18 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
     [ObservableProperty]
     public partial List<Section>? Sections { get; set; }
 
+    [ObservableProperty]
+    public partial bool CanPlay { get; set; }
+
+    [ObservableProperty]
+    public partial bool CanMarkPlayed { get; set; }
+
+    [ObservableProperty]
+    public partial bool CanMarkFavorite { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasTrailer { get; set; }
+
     public ItemDetailsViewModel(
         JellyfinApiClient jellyfinApiClient,
         JellyfinImageResolver imageResolver,
@@ -118,7 +130,12 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             Item = await _jellyfinApiClient.Items[parameters.ItemId].GetAsync();
 
             Name = Item!.Name;
-            BackdropImageUri = _imageResolver.GetBackdropImageUri(Item, 1920);
+
+            // Disable backdrop for Person and Book types because they only have primary images
+            if (Item.Type is not BaseItemDto_Type.Person and not BaseItemDto_Type.Book)
+            {
+                BackdropImageUri = _imageResolver.GetBackdropImageUri(Item, 1920);
+            }
 
             // TODO: Consolidate hard-coded dimensions with XAML.
             PrimaryImage = _imageResolver.ResolveImage(Item, ImageType.Primary, 300, 450);
@@ -172,14 +189,21 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             Overview = Item.Overview;
             Tags = Item.Tags is not null ? $"Tags: {string.Join(", ", Item.Tags)}" : null;
 
+            CanPlay = Item.IsPlayable();
+            CanMarkPlayed = Item.CanMarkPlayed();
+            CanMarkFavorite = Item.CanMarkFavorite();
+            HasTrailer = (Item.LocalTrailerCount > 0) || (Item.RemoteTrailers?.Count > 0);
+
             UpdateUserData();
 
             Task<Section?>[] sectionTasks =
             [
                 GetNextUpSectionAsync(),
                 GetChildrenSectionAsync(),
-                // TODO: Cast & Crew -->
-                // TODO: More Like This -->
+                GetCastSectionAsync("Cast & Crew", getGuestStars: false),
+                GetCastSectionAsync("Guest Stars", getGuestStars: true),
+                // TODO: Special Features
+                // TODO: More Like This
             ];
 
             List<Section> sections = new(sectionTasks.Length);
@@ -567,6 +591,40 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         }
 
         // TODO: Support list view for Type == MusicAlbum | Season
+        return new Section
+        {
+            Name = sectionName,
+            Cards = cards,
+        };
+    }
+
+    private async Task<Section?> GetCastSectionAsync(string sectionName, bool getGuestStars)
+    {
+        if (Item?.People is null)
+        {
+            return null;
+        }
+
+        List<Card> cards = new(Item.People.Count);
+        foreach (BaseItemPerson person in Item.People)
+        {
+            if (!person.Id.HasValue)
+            {
+                continue;
+            }
+
+            bool isGuestStar = person.Type == BaseItemPerson_Type.GuestStar;
+            if (isGuestStar == getGuestStars)
+            {
+                cards.Add(_cardFactory.CreateFromPerson(person, CardShape.Portrait));
+            }
+        }
+
+        if (cards.Count == 0)
+        {
+            return null;
+        }
+
         return new Section
         {
             Name = sectionName,

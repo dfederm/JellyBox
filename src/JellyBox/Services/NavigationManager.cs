@@ -105,6 +105,13 @@ internal sealed class NavigationManager
         }
     }
 
+    public void NavigateToPerson(BaseItemPerson person)
+    {
+        Guid itemId = person.Id!.Value;
+        CurrentItem = itemId;
+        NavigateContentFrame<ItemDetails>(new ItemDetails.Parameters(itemId));
+    }
+
     public void NavigateToVideo(BaseItemDto item, string? mediaSourceId, int? audioStreamIndex, int? subtitleStreamIndex)
     {
         CurrentItem = item.Id;
