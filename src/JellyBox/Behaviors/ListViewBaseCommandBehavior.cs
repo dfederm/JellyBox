@@ -1,27 +1,14 @@
-using System.Windows.Input;
+using JellyBox.Models;
 using Microsoft.Xaml.Interactivity;
-using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 
 namespace JellyBox.Behaviors;
 
 /// <summary>
-/// Creates an attached property for all ListViewBase controls allowing binding  a command object to it's ItemClick event.
+/// Invokes the NavigateCommand on INavigable items when they are clicked in a ListViewBase control.
 /// </summary>
 internal sealed class ListViewBaseCommandBehavior : Behavior<ListViewBase>
 {
-    public static readonly DependencyProperty CommandProperty = DependencyProperty.Register(
-        "Command",
-        typeof(ICommand),
-        typeof(ListViewBaseCommandBehavior),
-        new PropertyMetadata(null));
-
-    public ICommand Command
-    {
-        get => (ICommand)GetValue(CommandProperty);
-        set => SetValue(CommandProperty, value);
-    }
-
     protected override void OnAttached()
     {
         base.OnAttached();
@@ -36,12 +23,14 @@ internal sealed class ListViewBaseCommandBehavior : Behavior<ListViewBase>
         AssociatedObject.ItemClick -= ItemClicked;
     }
 
-    private void ItemClicked(object sender, ItemClickEventArgs e)
+    private static void ItemClicked(object sender, ItemClickEventArgs e)
     {
-        ICommand command = Command;
-        if (command is not null && command.CanExecute(e.ClickedItem))
+        if (e.ClickedItem is INavigable navigable)
         {
-            command.Execute(e.ClickedItem);
+            if (navigable.NavigateCommand.CanExecute(null))
+            {
+                navigable.NavigateCommand.Execute(null);
+            }
         }
     }
 }

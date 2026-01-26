@@ -31,7 +31,7 @@
                 IsItemClickEnabled="True">
                 <Interactivity:Interaction.Behaviors>
                   <Behaviors:FocusFirstItemOnLoadBehavior />
-                  <Behaviors:ListViewBaseCommandBehavior Command="{x:Bind ViewModel.NavigateToCardCommand}" />
+                  <Behaviors:ListViewBaseCommandBehavior />
                 </Interactivity:Interaction.Behaviors>
                 <GridView.ItemsPanel>
                     <ItemsPanelTemplate>

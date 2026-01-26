@@ -253,7 +253,7 @@
                                                 ScrollViewer.VerticalScrollMode="Disabled"
                                                 SelectionMode="None">
                                                 <Interactivity:Interaction.Behaviors>
-                                                    <Behaviors:ListViewBaseCommandBehavior Command="{x:Bind Path=NavigateToCardCommand}" />
+                                                    <Behaviors:ListViewBaseCommandBehavior />
                                                 </Interactivity:Interaction.Behaviors>
                                                 <ListView.ItemsPanel>
                                                     <ItemsPanelTemplate>

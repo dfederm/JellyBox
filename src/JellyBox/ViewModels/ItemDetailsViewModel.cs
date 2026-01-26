@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using System.Text;
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using JellyBox.Models;
 using JellyBox.Services;
 using JellyBox.Views;
@@ -469,14 +468,13 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
                 continue;
             }
 
-            cards.Add(CardFactory.CreateFromItem(item, CardShape.Backdrop, ImageType.Thumb, _imageResolver));
+            cards.Add(CardFactory.CreateFromItem(item, CardShape.Backdrop, ImageType.Thumb, _imageResolver, _navigationManager));
         }
 
         return new Section
         {
             Name = "Next Up",
             Cards = cards,
-            NavigateToCardCommand = NavigateToCardCommand,
         };
     }
 
@@ -562,7 +560,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
                 continue;
             }
 
-            cards.Add(CardFactory.CreateFromItem(item, cardShape, ImageType.Thumb, _imageResolver));
+            cards.Add(CardFactory.CreateFromItem(item, cardShape, ImageType.Thumb, _imageResolver, _navigationManager));
         }
 
         // TODO: Support list view for Type == MusicAlbum | Season
@@ -570,14 +568,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         {
             Name = sectionName,
             Cards = cards,
-            NavigateToCardCommand = NavigateToCardCommand,
         };
-    }
-
-    [RelayCommand]
-    private void NavigateToCard(Card card)
-    {
-        _navigationManager.NavigateToItem(card.Item);
     }
 
     private static Uri GetWebVideoUri(string url)
