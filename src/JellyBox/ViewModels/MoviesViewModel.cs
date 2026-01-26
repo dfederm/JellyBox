@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using JellyBox.Models;
-using JellyBox.Services;
 using JellyBox.Views;
 using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
@@ -13,8 +12,7 @@ internal sealed partial class MoviesViewModel : ObservableObject
 #pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
     private readonly JellyfinApiClient _jellyfinApiClient;
-    private readonly JellyfinImageResolver _imageResolver;
-    private readonly NavigationManager _navigationManager;
+    private readonly CardFactory _cardFactory;
 
     private Guid? _collectionItemId;
 
@@ -22,12 +20,10 @@ internal sealed partial class MoviesViewModel : ObservableObject
 
     public MoviesViewModel(
         JellyfinApiClient jellyfinApiClient,
-        JellyfinImageResolver imageResolver,
-        NavigationManager navigationManager)
+        CardFactory cardFactory)
     {
         _jellyfinApiClient = jellyfinApiClient;
-        _imageResolver = imageResolver;
-        _navigationManager = navigationManager;
+        _cardFactory = cardFactory;
     }
 
     public void HandleParameters(Movies.Parameters parameters)
@@ -65,7 +61,7 @@ internal sealed partial class MoviesViewModel : ObservableObject
                     continue;
                 }
 
-                Movies.Add(CardFactory.CreateFromItem(item, CardShape.Portrait, preferredImageType: null, _imageResolver, _navigationManager));
+                Movies.Add(_cardFactory.CreateFromItem(item, CardShape.Portrait, preferredImageType: null));
             }
         }
     }

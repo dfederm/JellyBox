@@ -1,7 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using JellyBox.Models;
-using JellyBox.Services;
 using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
 
@@ -12,19 +11,16 @@ internal sealed partial class HomeViewModel : ObservableObject
 #pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
     private readonly JellyfinApiClient _jellyfinApiClient;
-    private readonly JellyfinImageResolver _imageResolver;
-    private readonly NavigationManager _navigationManager;
+    private readonly CardFactory _cardFactory;
 
     public ObservableCollection<Section> Sections { get; } = new();
 
     public HomeViewModel(
         JellyfinApiClient jellyfinApiClient,
-        JellyfinImageResolver imageResolver,
-        NavigationManager navigationManager)
+        CardFactory cardFactory)
     {
         _jellyfinApiClient = jellyfinApiClient;
-        _imageResolver = imageResolver;
-        _navigationManager = navigationManager;
+        _cardFactory = cardFactory;
     }
 
     public async void Initialize()
@@ -103,7 +99,7 @@ internal sealed partial class HomeViewModel : ObservableObject
                 continue;
             }
 
-            cards.Add(CardFactory.CreateFromItem(item, cardShape, preferredImageType, _imageResolver, _navigationManager));
+            cards.Add(_cardFactory.CreateFromItem(item, cardShape, preferredImageType));
         }
 
         return new Section

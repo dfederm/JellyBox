@@ -1,4 +1,5 @@
 ﻿using System.Net.Http.Headers;
+using JellyBox.Models;
 using JellyBox.Services;
 using JellyBox.ViewModels;
 using Jellyfin.Sdk;
@@ -59,9 +60,10 @@ internal sealed class AppServices
         serviceCollection.AddScoped<JellyfinApiClient>();
 
         serviceCollection.AddSingleton<AppSettings>();
-        serviceCollection.AddSingleton<NavigationManager>();
+        serviceCollection.AddSingleton<CardFactory>();
         serviceCollection.AddSingleton<DeviceProfileManager>();
         serviceCollection.AddSingleton<JellyfinImageResolver>();
+        serviceCollection.AddSingleton<NavigationManager>();
 
         // View Models
         serviceCollection.AddTransient<HomeViewModel>();

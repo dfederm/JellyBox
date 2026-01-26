@@ -4,14 +4,23 @@ using Jellyfin.Sdk.Generated.Models;
 
 namespace JellyBox.Models;
 
-internal static class CardFactory
+#pragma warning disable CA1812 // Avoid uninstantiated internal classes. Used via dependency injection.
+internal sealed class CardFactory
+#pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
-    public static Card CreateFromItem(
+    private readonly JellyfinImageResolver _imageResolver;
+    private readonly NavigationManager _navigationManager;
+
+    public CardFactory(JellyfinImageResolver imageResolver, NavigationManager navigationManager)
+    {
+        _imageResolver = imageResolver;
+        _navigationManager = navigationManager;
+    }
+
+    public Card CreateFromItem(
         BaseItemDto item,
         CardShape shape,
-        ImageType? preferredImageType,
-        JellyfinImageResolver imageResolver,
-        NavigationManager navigationManager)
+        ImageType? preferredImageType)
     {
         double aspectRatio = GetAspectRatio(shape);
         ImageType imageType;
@@ -48,7 +57,7 @@ internal static class CardFactory
         }
 
         int imageHeight = (int)Math.Round(imageWidth / aspectRatio);
-        JellyfinImage image = imageResolver.ResolveImage(item, imageType, imageWidth, imageHeight);
+        JellyfinImage image = _imageResolver.ResolveImage(item, imageType, imageWidth, imageHeight);
 
         return new Card
         {
@@ -56,7 +65,7 @@ internal static class CardFactory
             ImageWidth = imageWidth,
             ImageHeight = imageHeight,
             Image = image,
-            NavigateCommand = new RelayCommand(() => navigationManager.NavigateToItem(item)),
+            NavigateCommand = new RelayCommand(() => _navigationManager.NavigateToItem(item)),
         };
     }
 
