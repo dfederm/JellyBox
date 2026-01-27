@@ -42,6 +42,7 @@ internal sealed class CardFactory
         {
             imageType = ImageType.Primary;
 
+            // TODO: Is this necessary?
             if (item.PrimaryImageAspectRatio.HasValue)
             {
                 aspectRatio = item.PrimaryImageAspectRatio.Value;
@@ -66,6 +67,26 @@ internal sealed class CardFactory
             ImageHeight = imageHeight,
             Image = image,
             NavigateCommand = new RelayCommand(() => _navigationManager.NavigateToItem(item)),
+        };
+    }
+
+    public Card CreateFromPerson(
+        BaseItemPerson person,
+        CardShape shape)
+    {
+        double aspectRatio = GetAspectRatio(shape);
+        int imageWidth = shape == CardShape.Portrait ? 200 : 300;
+        int imageHeight = (int)Math.Round(imageWidth / aspectRatio);
+        JellyfinImage image = _imageResolver.ResolveImage(person, imageWidth, imageHeight);
+
+        return new Card
+        {
+            Name = person.Name!,
+            // TODO: Cards need secondardy text to display Role
+            ImageWidth = imageWidth,
+            ImageHeight = imageHeight,
+            Image = image,
+            NavigateCommand = new RelayCommand(() => _navigationManager.NavigateToPerson(person)),
         };
     }
 

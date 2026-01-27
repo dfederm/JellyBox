@@ -36,6 +36,21 @@ internal sealed class JellyfinImageResolver
                 GetBlurHash(item.ImageBlurHashes, imageType, imageTag));
     }
 
+    public JellyfinImage ResolveImage(BaseItemPerson person, int width, int height)
+    {
+        if (!person.Id.HasValue)
+        {
+            return default;
+        }
+
+        string? imageTag = person.PrimaryImageTag;
+        return imageTag is null
+            ? default
+            : new JellyfinImage(
+                BuildImageUri(person.Id.Value, nameof(ImageType.Primary), imageTag, width, height),
+                GetBlurHash(person.ImageBlurHashes, ImageType.Primary, imageTag));
+    }
+
     public Uri? GetBackdropImageUri(BaseItemDto item, int? maxWidth)
     {
         RequestInformation? backdropImageRequest = null;
@@ -138,12 +153,40 @@ internal sealed class JellyfinImageResolver
             _ => null,
         };
 
-        if (blurHashesForType is not null
-            && blurHashesForType.AdditionalData.TryGetValue(imageTag, out object? blurHashObj))
+        return GetBlurHash(blurHashesForType, imageTag);
+    }
+
+    private static string? GetBlurHash(BaseItemPerson_ImageBlurHashes? blurHashes, ImageType imageType, string imageTag)
+    {
+        if (blurHashes is null)
         {
-            return blurHashObj.ToString();
+            return null;
         }
 
-        return null;
+        // This is a little gross, but there doesn't seem to be a better way to do it.
+        IAdditionalDataHolder? blurHashesForType = imageType switch
+        {
+            ImageType.Art => blurHashes.Art,
+            ImageType.Backdrop => blurHashes.Backdrop,
+            ImageType.Banner => blurHashes.Banner,
+            ImageType.Box => blurHashes.Box,
+            ImageType.BoxRear => blurHashes.BoxRear,
+            ImageType.Chapter => blurHashes.Chapter,
+            ImageType.Disc => blurHashes.Disc,
+            ImageType.Logo => blurHashes.Logo,
+            ImageType.Menu => blurHashes.Menu,
+            ImageType.Primary => blurHashes.Primary,
+            ImageType.Profile => blurHashes.Profile,
+            ImageType.Screenshot => blurHashes.Screenshot,
+            ImageType.Thumb => blurHashes.Thumb,
+            _ => null,
+        };
+
+        return GetBlurHash(blurHashesForType, imageTag);
     }
+
+    private static string? GetBlurHash(IAdditionalDataHolder? blurHashesForType, string imageTag)
+        => blurHashesForType is not null && blurHashesForType.AdditionalData.TryGetValue(imageTag, out object? blurHashObj)
+            ? blurHashObj.ToString()
+            : null;
 }
