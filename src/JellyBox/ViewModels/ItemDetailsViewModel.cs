@@ -12,7 +12,7 @@ namespace JellyBox.ViewModels;
 
 internal sealed record MediaInfoItem(string Text);
 
-internal sealed record MediaStreamOption(string DisplayText, int? Index)
+internal sealed record MediaStreamOption(string DisplayText, int Index)
 {
     public static MediaStreamOption SubtitlesOff { get; } = new("Off", -1);
 }
@@ -229,7 +229,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             .Where(s => s.Type == MediaStream_Type.Video)
             .OrderBy(s => s, MediaStreamComparer.Instance)
             .ToList();
-        int? selectedIndex = videoStreams.Count > 0 ? videoStreams[0].Index : -1;
+        int selectedIndex = videoStreams.Count > 0 ? videoStreams[0].Index.GetValueOrDefault() : -1;
 
         MediaStreamOption? selectedOption = null;
         List<MediaStreamOption> options = new(videoStreams.Count);
@@ -243,10 +243,11 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
                 displayTitle = "TODO";
             }
 
-            MediaStreamOption option = new(displayTitle, videoStream.Index);
+            int index = videoStream.Index.GetValueOrDefault();
+            MediaStreamOption option = new(displayTitle, index);
             options.Add(option);
 
-            if (selectedOption is null || videoStream.Index == selectedIndex)
+            if (selectedOption is null || index == selectedIndex)
             {
                 selectedOption = option;
             }
@@ -268,10 +269,11 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         List<MediaStreamOption> options = new(audioStreams.Count);
         foreach (MediaStream audioStream in audioStreams)
         {
-            MediaStreamOption option = new(audioStream.DisplayTitle!, audioStream.Index);
+            int index = audioStream.Index.GetValueOrDefault();
+            MediaStreamOption option = new(audioStream.DisplayTitle!, index);
             options.Add(option);
 
-            if (selectedOption is null || audioStream.Index == selectedIndex)
+            if (selectedOption is null || index == selectedIndex)
             {
                 selectedOption = option;
             }
@@ -305,10 +307,11 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
         foreach (MediaStream subtitleStream in subtitleStreams)
         {
-            MediaStreamOption option = new(subtitleStream.DisplayTitle!, subtitleStream.Index);
+            int index = subtitleStream.Index.GetValueOrDefault();
+            MediaStreamOption option = new(subtitleStream.DisplayTitle!, index);
             options.Add(option);
 
-            if (selectedOption is null || subtitleStream.Index == selectedIndex)
+            if (selectedOption is null || index == selectedIndex)
             {
                 selectedOption = option;
             }
