@@ -7,8 +7,6 @@ using JellyBox.Services;
 using JellyBox.Views;
 using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
-using Windows.UI;
-using Windows.UI.Xaml.Media;
 
 namespace JellyBox.ViewModels;
 
@@ -25,9 +23,6 @@ internal sealed record MediaSourceInfoWrapper(string DisplayText, MediaSourceInf
 internal sealed partial class ItemDetailsViewModel : ObservableObject
 #pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
-    private static readonly SolidColorBrush OnBrush = new SolidColorBrush(Colors.Red);
-    private static readonly SolidColorBrush OffBrush = new SolidColorBrush(Colors.White);
-
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly JellyfinImageResolver _imageResolver;
     private readonly NavigationManager _navigationManager;
@@ -88,13 +83,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
     public partial bool IsPlayed { get; set; }
 
     [ObservableProperty]
-    public partial Brush? PlayStateBrush { get; set; }
-
-    [ObservableProperty]
     public partial bool IsFavorite { get; set; }
-
-    [ObservableProperty]
-    public partial Brush? FavoriteBrush { get; set; }
 
     [ObservableProperty]
     public partial List<Section>? Sections { get; set; }
@@ -460,10 +449,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         }
 
         IsPlayed = Item.UserData!.Played.GetValueOrDefault();
-        PlayStateBrush = IsPlayed ? OnBrush : OffBrush;
-
         IsFavorite = Item.UserData.IsFavorite.GetValueOrDefault();
-        FavoriteBrush = IsFavorite ? OnBrush : OffBrush;
     }
 
     private async Task<Section?> GetNextUpSectionAsync()
