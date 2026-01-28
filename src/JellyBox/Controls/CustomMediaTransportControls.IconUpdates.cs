@@ -1,14 +1,28 @@
+using Windows.UI;
 using Windows.UI.Xaml.Controls.Primitives;
+using Windows.UI.Xaml.Media;
 
 namespace JellyBox.Controls;
 
 internal sealed partial class CustomMediaTransportControls
 {
+    private static readonly SolidColorBrush FavoriteOnBrush = new(Colors.Red);
+    private static readonly SolidColorBrush FavoriteOffBrush = new(Colors.White);
+
     private bool _isUpdatingVolumeSlider;
 
     private void UpdatePlayPauseIcon() => _playPauseIcon?.Glyph = IsPlaying ? Glyphs.Pause : Glyphs.Play;
 
-    private void UpdateFavoriteIcon() => _favoriteIcon?.Glyph = IsFavorite ? Glyphs.HeartFilled : Glyphs.HeartOutline;
+    private void UpdateFavoriteIcon()
+    {
+        if (_favoriteIcon is null)
+        {
+            return;
+        }
+
+        _favoriteIcon.Glyph = IsFavorite ? Glyphs.HeartFilled : Glyphs.HeartOutline;
+        _favoriteIcon.Foreground = IsFavorite ? FavoriteOnBrush : FavoriteOffBrush;
+    }
 
     private void UpdateEndsAtText() => _endsAtTextBlock?.Text = EndsAtText;
 

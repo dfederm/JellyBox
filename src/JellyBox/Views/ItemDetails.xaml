@@ -9,6 +9,7 @@
     xmlns:Behaviors="using:JellyBox.Behaviors"
     xmlns:uc="using:JellyBox.Controls"
     xmlns:m="using:JellyBox.Models"
+    xmlns:g="using:JellyBox"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
@@ -110,34 +111,36 @@
                                     <Interactivity:Interaction.Behaviors>
                                         <Behaviors:FocusOnLoadBehavior />
                                     </Interactivity:Interaction.Behaviors>
-                                    <SymbolIcon Symbol="Play" />
+                                    <FontIcon Glyph="{x:Bind g:Glyphs.Play}" FontFamily="{StaticResource SegoeIcons}" />
                                 </Button>
                                 <Button
                                     Margin="0 8 0 8"
                                     Click="{x:Bind ViewModel.PlayTrailer}"
                                     Visibility="{x:Bind ViewModel.HasTrailer, Mode=OneWay}">
-                                    <SymbolIcon Symbol="SlideShow" />
+                                    <FontIcon Glyph="{x:Bind g:Glyphs.Movies}" FontFamily="{StaticResource SegoeIcons}" />
                                 </Button>
                                 <Button
                                     Margin="0 8 0 8"
                                     Click="{x:Bind ViewModel.TogglePlayed}"
                                     Visibility="{x:Bind ViewModel.CanMarkPlayed, Mode=OneWay}">
-                                    <SymbolIcon
-                                        Symbol="Accept"
-                                        Foreground="{x:Bind ViewModel.PlayStateBrush, Mode=OneWay}" />
+                                    <FontIcon
+                                        Glyph="{x:Bind g:Glyphs.Accept}"
+                                        FontFamily="{StaticResource SegoeIcons}"
+                                        Foreground="{x:Bind ViewModel.IsPlayed, Mode=OneWay, Converter={StaticResource BoolToBrushConverter}}" />
                                 </Button>
                                 <Button
                                     Margin="0 8 0 8"
                                     Click="{x:Bind ViewModel.ToggleFavorite}"
                                     Visibility="{x:Bind ViewModel.CanMarkFavorite, Mode=OneWay}">
-                                    <SymbolIcon
-                                        Symbol="Favorite"
-                                        Foreground="{x:Bind ViewModel.FavoriteBrush, Mode=OneWay}" />
+                                    <FontIcon
+                                        Glyph="{x:Bind g:Glyphs.HeartFilled}"
+                                        FontFamily="{StaticResource SegoeIcons}"
+                                        Foreground="{x:Bind ViewModel.IsFavorite, Mode=OneWay, Converter={StaticResource BoolToBrushConverter}}" />
                                 </Button>
                                 <!-- TODO: More commands -->
                                 <Button
                                     Margin="0 8 0 8">
-                                    <SymbolIcon Symbol="More" />
+                                    <FontIcon Glyph="{x:Bind g:Glyphs.More}" FontFamily="{StaticResource SegoeIcons}" />
                                 </Button>
                             </StackPanel>
                         </Grid>
