@@ -8,7 +8,12 @@ namespace JellyBox.Controls;
 /// <summary>
 /// Represents a selectable audio or subtitle track.
 /// </summary>
-internal sealed record TrackInfo(int Index, string DisplayName);
+/// <param name="JellyfinIndex">The Jellyfin stream index.</param>
+/// <param name="UwpTrackIndex">The UWP MediaPlayer track index, or null if not directly playable.</param>
+/// <param name="DisplayName">The display name for the track.</param>
+/// <param name="IsExternal">Whether this is an external track (sidecar file).</param>
+/// <param name="Codec">The codec of the track (e.g., "subrip", "aac").</param>
+internal sealed record TrackInfo(int JellyfinIndex, int? UwpTrackIndex, string DisplayName, bool IsExternal, string? Codec);
 
 internal sealed partial class CustomMediaTransportControls
 {
@@ -44,8 +49,8 @@ internal sealed partial class CustomMediaTransportControls
             ToggleMenuFlyoutItem item = new()
             {
                 Text = track.DisplayName,
-                Tag = track.Index,
-                IsChecked = track.Index == SelectedAudioIndex
+                Tag = track,
+                IsChecked = track.JellyfinIndex == SelectedAudioIndex
             };
             item.Click += OnAudioTrackItemClicked;
             _audioTracksFlyout.Items.Add(item);
@@ -63,18 +68,18 @@ internal sealed partial class CustomMediaTransportControls
 
         foreach (MenuFlyoutItemBase menuItem in _audioTracksFlyout.Items)
         {
-            if (menuItem is ToggleMenuFlyoutItem toggleItem)
+            if (menuItem is ToggleMenuFlyoutItem toggleItem && toggleItem.Tag is TrackInfo track)
             {
-                toggleItem.IsChecked = toggleItem.Tag is int index && index == SelectedAudioIndex;
+                toggleItem.IsChecked = track.JellyfinIndex == SelectedAudioIndex;
             }
         }
     }
 
     private void OnAudioTrackItemClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is ToggleMenuFlyoutItem item && item.Tag is int index)
+        if (sender is ToggleMenuFlyoutItem item && item.Tag is TrackInfo track)
         {
-            SelectAudioTrackCommand?.Execute(index);
+            SelectAudioTrackCommand?.Execute(track);
         }
     }
 
@@ -100,10 +105,11 @@ internal sealed partial class CustomMediaTransportControls
         _subtitlesFlyout = new() { Placement = FlyoutPlacementMode.Top };
 
         // Add "Off" option at the top
+        TrackInfo offTrack = new(-1, UwpTrackIndex: null, "Off", IsExternal: false, Codec: null);
         ToggleMenuFlyoutItem offItem = new()
         {
-            Text = "Off",
-            Tag = -1,
+            Text = offTrack.DisplayName,
+            Tag = offTrack,
             IsChecked = SelectedSubtitleIndex == -1
         };
         offItem.Click += OnSubtitleTrackItemClicked;
@@ -116,8 +122,8 @@ internal sealed partial class CustomMediaTransportControls
             ToggleMenuFlyoutItem item = new()
             {
                 Text = track.DisplayName,
-                Tag = track.Index,
-                IsChecked = track.Index == SelectedSubtitleIndex
+                Tag = track,
+                IsChecked = track.JellyfinIndex == SelectedSubtitleIndex
             };
             item.Click += OnSubtitleTrackItemClicked;
             _subtitlesFlyout.Items.Add(item);
@@ -135,18 +141,18 @@ internal sealed partial class CustomMediaTransportControls
 
         foreach (MenuFlyoutItemBase menuItem in _subtitlesFlyout.Items)
         {
-            if (menuItem is ToggleMenuFlyoutItem toggleItem)
+            if (menuItem is ToggleMenuFlyoutItem toggleItem && toggleItem.Tag is TrackInfo track)
             {
-                toggleItem.IsChecked = toggleItem.Tag is int index && index == SelectedSubtitleIndex;
+                toggleItem.IsChecked = track.JellyfinIndex == SelectedSubtitleIndex;
             }
         }
     }
 
     private void OnSubtitleTrackItemClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is ToggleMenuFlyoutItem item && item.Tag is int index)
+        if (sender is ToggleMenuFlyoutItem item && item.Tag is TrackInfo track)
         {
-            SelectSubtitleTrackCommand?.Execute(index);
+            SelectSubtitleTrackCommand?.Execute(track);
         }
     }
 

@@ -9,6 +9,7 @@ using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
 using Microsoft.Kiota.Abstractions;
 using Windows.ApplicationModel.Core;
+using Windows.Foundation.Collections;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Media.Streaming.Adaptive;
@@ -34,7 +35,9 @@ internal sealed partial class VideoViewModel : ObservableObject
     private PlaybackProgressInfo? _playbackProgressInfo;
     private BaseItemDto? _currentItem;
     private MediaSourceInfo? _currentMediaSource;
+    private MediaPlaybackItem? _currentPlaybackItem;
     private double _volumeBeforeMute = 1.0;
+    private bool _isDirectPlay;
 
     public VideoViewModel(
         JellyfinApiClient jellyfinApiClient,
@@ -256,149 +259,20 @@ internal sealed partial class VideoViewModel : ObservableObject
                 _transportControls.EndsAtText = $"Ends at {endTime:t}";
             }
 
-            DeviceProfile deviceProfile = _deviceProfileManager.Profile;
-
             BackdropImageUri = _imageResolver.GetBackdropImageUri(item, 1920);
             ShowBackdropImage = true;
 
-            // Note: This mutates the shared device profile. That's probably OK as long as all accesses do this.
-            // TODO: Look into making a copy instead.
-            deviceProfile.MaxStreamingBitrate = await DetectBitrateAsync();
-
-            PlaybackInfoDto playbackInfo = new()
+            _playbackProgressInfo = new PlaybackProgressInfo
             {
-                DeviceProfile = deviceProfile,
-                MediaSourceId = parameters.MediaSourceId,
+                ItemId = item.Id!.Value,
                 AudioStreamIndex = parameters.AudioStreamIndex,
                 SubtitleStreamIndex = parameters.SubtitleStreamIndex,
             };
 
-            // TODO: Does this create a play session? If so, update progress properly.
-            PlaybackInfoResponse? playbackInfoResponse = await _jellyfinApiClient.Items[item.Id!.Value].PlaybackInfo.PostAsync(playbackInfo);
-
-            // TODO: Always the first? What if 0 or > 1?
-            MediaSourceInfo mediaSourceInfo = playbackInfoResponse!.MediaSources![0];
-            _currentMediaSource = mediaSourceInfo;
-
-            _playbackProgressInfo = new PlaybackProgressInfo
-            {
-                ItemId = item.Id.Value,
-                MediaSourceId = mediaSourceInfo.Id,
-                PlaySessionId = playbackInfoResponse.PlaySessionId,
-                AudioStreamIndex = playbackInfo.AudioStreamIndex,
-                SubtitleStreamIndex = playbackInfo.SubtitleStreamIndex,
-            };
-
-            // Populate audio and subtitle track lists
-            PopulateTrackLists(mediaSourceInfo, playbackInfo.AudioStreamIndex, playbackInfo.SubtitleStreamIndex);
-
-            bool isAdaptive;
-            Uri? mediaUri;
-
-            if (mediaSourceInfo.SupportsDirectPlay.GetValueOrDefault() || mediaSourceInfo.SupportsDirectStream.GetValueOrDefault())
-            {
-                RequestInformation request = _jellyfinApiClient.Videos[item.Id.Value].StreamWithContainer(mediaSourceInfo.Container).ToGetRequestInformation(
-                    parameters =>
-                    {
-                        parameters.QueryParameters.Static = true;
-                        parameters.QueryParameters.MediaSourceId = mediaSourceInfo.Id;
-
-                        // TODO Copied from AppServices. Get this in a better way, shared by the Jellyfin SDK settings initialization.
-                        parameters.QueryParameters.DeviceId = new EasClientDeviceInformation().Id.ToString();
-
-                        if (mediaSourceInfo.ETag is not null)
-                        {
-                            parameters.QueryParameters.Tag = mediaSourceInfo.ETag;
-                        }
-
-                        if (mediaSourceInfo.LiveStreamId is not null)
-                        {
-                            parameters.QueryParameters.LiveStreamId = mediaSourceInfo.LiveStreamId;
-                        }
-                    });
-                mediaUri = _jellyfinApiClient.BuildUri(request);
-
-                // TODO: The Jellyfin SDK doesn't appear to provide a way to add this query param.
-                mediaUri = new Uri($"{mediaUri.AbsoluteUri}&api_key={_sdkClientSettings.AccessToken}");
-                isAdaptive = false;
-            }
-            else if (mediaSourceInfo.SupportsTranscoding.GetValueOrDefault())
-            {
-                if (!Uri.TryCreate(_sdkClientSettings.ServerUrl + mediaSourceInfo.TranscodingUrl, UriKind.Absolute, out mediaUri))
-                {
-                    // TODO: Error handling
-                    return;
-                }
-
-                isAdaptive = mediaSourceInfo.TranscodingSubProtocol == MediaSourceInfo_TranscodingSubProtocol.Hls;
-            }
-            else
-            {
-                // TODO: Default handling
-                return;
-            }
-
-#pragma warning disable CA2000 // Dispose objects before losing scope. The media source is disposed in StopVideoAsync.
-            MediaSource mediaSource;
-            if (isAdaptive)
-            {
-                AdaptiveMediaSourceCreationResult result = await AdaptiveMediaSource.CreateFromUriAsync(mediaUri);
-                if (result.Status == AdaptiveMediaSourceCreationStatus.Success)
-                {
-                    AdaptiveMediaSource ams = result.MediaSource;
-                    ams.InitialBitrate = ams.AvailableBitrates.Max();
-
-                    mediaSource = MediaSource.CreateFromAdaptiveMediaSource(ams);
-                }
-                else
-                {
-                    // Fall back to creating from the Uri directly
-                    mediaSource = MediaSource.CreateFromUri(mediaUri);
-                }
-            }
-            else
-            {
-                mediaSource = MediaSource.CreateFromUri(mediaUri);
-            }
-#pragma warning restore CA2000 // Dispose objects before losing scope
-
-            if (mediaSourceInfo.DefaultSubtitleStreamIndex.HasValue
-                && mediaSourceInfo.DefaultSubtitleStreamIndex.Value != -1)
-            {
-                MediaStream subtitleTrack = mediaSourceInfo.MediaStreams![mediaSourceInfo.DefaultSubtitleStreamIndex.Value];
-                if (subtitleTrack.IsExternal.GetValueOrDefault())
-                {
-                    // TODO: Check the subtitle format (Codec property), as some mayneed to be handled differently.
-                    string? subtitleUrl = subtitleTrack.DeliveryUrl;
-                    if (!subtitleTrack.IsExternalUrl.GetValueOrDefault())
-                    {
-                        subtitleUrl = _sdkClientSettings.ServerUrl + subtitleUrl;
-                    }
-
-                    if (Uri.TryCreate(subtitleUrl, UriKind.Absolute, out Uri? subtitleUri))
-                    {
-                        TimedTextSource timedTextSource = TimedTextSource.CreateFromUri(subtitleUri);
-                        mediaSource.ExternalTimedTextSources.Add(timedTextSource);
-                    }
-                    else
-                    {
-                        // TODO: Error handling
-                    }
-                }
-            }
-
-            MediaPlaybackItem playbackItem = new(mediaSource);
-
-            // Present the first track, which is the subtitles
-            playbackItem.TimedMetadataTracksChanged += (sender, args) =>
-            {
-                playbackItem.TimedMetadataTracks.SetPresentationMode(0, TimedMetadataTrackPresentationMode.PlatformPresented);
-            };
-
-#pragma warning disable CA2000 // Dispose objects before losing scope. Disposed in StopVideoAsync.
+            // Create the MediaPlayer and set up event handlers (first-time only)
+#pragma warning disable CA2000 // Dispose objects before losing scope. Disposed in StopVideo.
             _playerElement.SetMediaPlayer(new MediaPlayer());
 #pragma warning restore CA2000 // Dispose objects before losing scope
-            _playerElement.MediaPlayer.Source = playbackItem;
 
             // Initialize volume state on transport controls
             UpdateTransportControlsVolumeState();
@@ -454,14 +328,9 @@ internal sealed partial class VideoViewModel : ObservableObject
                 await ReportProgressAsync();
             };
 
-            MediaStream videoStream = mediaSourceInfo.MediaStreams!.First(stream => stream.Type == MediaStream_Type.Video);
-            await DisplayModeManager.SetBestDisplayModeAsync(
-                (uint)videoStream.Width!.Value,
-                (uint)videoStream.Height!.Value,
-                (double)videoStream.RealFrameRate!.Value,
-                videoStream.VideoRangeType!.Value);
-
-            _playerElement.MediaPlayer.Play();
+            // TODO: Once resume functionality is implemented, use the actual start position
+            // (e.g., item.UserData?.PlaybackPositionTicks) instead of assuming start from beginning.
+            await StartPlaybackAsync(parameters.MediaSourceId, TimeSpan.Zero);
 
             await ReportStartedAsync();
 
@@ -515,6 +384,7 @@ internal sealed partial class VideoViewModel : ObservableObject
 
             _currentItem = null;
             _currentMediaSource = null;
+            CleanupCurrentPlaybackItem();
 
             await DisplayModeManager.SetDefaultDisplayModeAsync();
 
@@ -584,50 +454,247 @@ internal sealed partial class VideoViewModel : ObservableObject
             return;
         }
 
-        // Audio tracks
+        // Audio tracks - UWP index matches iteration order
         List<TrackInfo> audioTracks = [];
         int defaultAudioIndex = selectedAudioIndex ?? mediaSourceInfo.DefaultAudioStreamIndex ?? -1;
+        int uwpAudioIndex = 0;
         foreach (MediaStream stream in mediaSourceInfo.MediaStreams.Where(s => s.Type == MediaStream_Type.Audio))
         {
             string displayName = stream.DisplayTitle ?? stream.Language ?? $"Track {stream.Index}";
-            audioTracks.Add(new TrackInfo(stream.Index!.Value, displayName));
+            audioTracks.Add(new TrackInfo(
+                stream.Index!.Value,
+                uwpAudioIndex,
+                displayName,
+                stream.IsExternal.GetValueOrDefault(),
+                stream.Codec));
+            uwpAudioIndex++;
         }
         _transportControls.AudioTracks = audioTracks;
         _transportControls.SelectedAudioIndex = defaultAudioIndex;
 
-        // Subtitle tracks
+        // Subtitle tracks - only include supported formats.
+        // UWP's TimedMetadataTracks collection orders embedded tracks first, then external tracks
+        // in the order they were added to ExternalTimedTextSources.
+        // See: https://learn.microsoft.com/en-us/windows/uwp/audio-video-camera/media-playback-with-mediasource
         List<TrackInfo> subtitleTracks = [];
         int defaultSubtitleIndex = selectedSubtitleIndex ?? mediaSourceInfo.DefaultSubtitleStreamIndex ?? -1;
-        foreach (MediaStream stream in mediaSourceInfo.MediaStreams.Where(s => s.Type == MediaStream_Type.Subtitle))
+        int uwpSubtitleIndex = 0;
+
+        // First pass: embedded subtitles (supported formats only)
+        foreach (MediaStream stream in mediaSourceInfo.MediaStreams
+            .Where(s => s.Type == MediaStream_Type.Subtitle && !s.IsExternal.GetValueOrDefault()))
         {
+            if (!IsSubtitleFormatSupported(stream))
+            {
+                // If the default subtitle is unsupported, clear the selection
+                if (stream.Index == defaultSubtitleIndex)
+                {
+                    defaultSubtitleIndex = -1;
+                }
+
+                continue;
+            }
+
             string displayName = stream.DisplayTitle ?? stream.Language ?? $"Track {stream.Index}";
-            subtitleTracks.Add(new TrackInfo(stream.Index!.Value, displayName));
+            subtitleTracks.Add(new TrackInfo(
+                stream.Index!.Value,
+                uwpSubtitleIndex,
+                displayName,
+                IsExternal: false,
+                stream.Codec));
+            uwpSubtitleIndex++;
         }
+
+        // Second pass: external subtitles (supported formats only)
+        foreach (MediaStream stream in mediaSourceInfo.MediaStreams
+            .Where(s => s.Type == MediaStream_Type.Subtitle && s.IsExternal.GetValueOrDefault()))
+        {
+            if (!IsSubtitleFormatSupported(stream))
+            {
+                // If the default subtitle is unsupported, clear the selection
+                if (stream.Index == defaultSubtitleIndex)
+                {
+                    defaultSubtitleIndex = -1;
+                }
+
+                continue;
+            }
+
+            string displayName = stream.DisplayTitle ?? stream.Language ?? $"Track {stream.Index}";
+            subtitleTracks.Add(new TrackInfo(
+                stream.Index!.Value,
+                uwpSubtitleIndex,
+                displayName,
+                IsExternal: true,
+                stream.Codec));
+            uwpSubtitleIndex++;
+        }
+
         _transportControls.SubtitleTracks = subtitleTracks;
         _transportControls.SelectedSubtitleIndex = defaultSubtitleIndex;
     }
 
-    [RelayCommand]
-    private void SelectAudioTrack(int trackIndex)
+    private void OnTimedMetadataTracksChanged(MediaPlaybackItem sender, IVectorChangedEventArgs args)
     {
-        _playbackProgressInfo?.AudioStreamIndex = trackIndex;
-        _transportControls?.SelectedAudioIndex = trackIndex;
+        // Capture the sender reference for use in the dispatcher callback
+        MediaPlaybackItem playbackItem = sender;
 
-        // Restart playback with the new audio track
+        _ = CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
+            CoreDispatcherPriority.Normal,
+            () =>
+            {
+                try
+                {
+                    // Verify the playback item is still current
+                    if (playbackItem != _currentPlaybackItem)
+                    {
+                        return;
+                    }
+
+                    // Present the selected subtitle track if one is selected
+                    int selectedIndex = _playbackProgressInfo?.SubtitleStreamIndex ?? -1;
+                    int? uwpIndex = GetSubtitleUwpIndex(selectedIndex);
+                    if (uwpIndex.HasValue && uwpIndex.Value < playbackItem.TimedMetadataTracks.Count)
+                    {
+                        playbackItem.TimedMetadataTracks.SetPresentationMode((uint)uwpIndex.Value, TimedMetadataTrackPresentationMode.PlatformPresented);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error in OnTimedMetadataTracksChanged: {ex}");
+                }
+            });
+    }
+
+    /// <summary>
+    /// Looks up the precomputed UWP track index for a given Jellyfin subtitle stream index.
+    /// </summary>
+    private int? GetSubtitleUwpIndex(int jellyfinIndex)
+        => _transportControls?.SubtitleTracks?.FirstOrDefault(t => t.JellyfinIndex == jellyfinIndex)?.UwpTrackIndex;
+
+    [RelayCommand]
+    private void SelectAudioTrack(TrackInfo track)
+    {
+        _playbackProgressInfo?.AudioStreamIndex = track.JellyfinIndex;
+        _transportControls?.SelectedAudioIndex = track.JellyfinIndex;
+
+        // Try seamless switch if we're in direct play
+        if (_isDirectPlay
+            && _currentPlaybackItem is not null
+            && track.UwpTrackIndex.HasValue
+            && track.UwpTrackIndex.Value < _currentPlaybackItem.AudioTracks.Count)
+        {
+            _currentPlaybackItem.AudioTracks.SelectedIndex = track.UwpTrackIndex.Value;
+            Debug.WriteLine($"Seamless audio track switch to Jellyfin index {track.JellyfinIndex} (UWP index {track.UwpTrackIndex})");
+            return;
+        }
+
+        // Fall back to restarting playback (e.g., for transcoding scenarios)
+        Debug.WriteLine($"Restarting playback for audio track {track.JellyfinIndex}");
         RestartPlaybackWithCurrentPosition();
     }
 
     [RelayCommand]
-    private void SelectSubtitleTrack(int trackIndex)
+    private void SelectSubtitleTrack(TrackInfo track)
     {
-        // -1 means "off", otherwise use the track index
-        // Note: We store -1 directly rather than null so the API explicitly disables subtitles
-        _playbackProgressInfo?.SubtitleStreamIndex = trackIndex;
-        _transportControls?.SelectedSubtitleIndex = trackIndex;
+        // JellyfinIndex of -1 means "off"
+        _playbackProgressInfo?.SubtitleStreamIndex = track.JellyfinIndex;
+        _transportControls?.SelectedSubtitleIndex = track.JellyfinIndex;
 
-        // Restart playback with the new subtitle track
+        // Try seamless switch - set each track's mode in a single pass
+        if (_isDirectPlay
+            && _currentPlaybackItem is not null
+            && (!track.UwpTrackIndex.HasValue || track.UwpTrackIndex.Value < _currentPlaybackItem.TimedMetadataTracks.Count))
+        {
+            for (uint i = 0; i < _currentPlaybackItem.TimedMetadataTracks.Count; i++)
+            {
+                var mode = i == track.UwpTrackIndex
+                    ? TimedMetadataTrackPresentationMode.PlatformPresented
+                    : TimedMetadataTrackPresentationMode.Disabled;
+                _currentPlaybackItem.TimedMetadataTracks.SetPresentationMode(i, mode);
+            }
+
+            Debug.WriteLine(track.UwpTrackIndex.HasValue
+                ? $"Seamless subtitle switch to Jellyfin index {track.JellyfinIndex} (UWP index {track.UwpTrackIndex})"
+                : "Subtitles disabled");
+            return;
+        }
+
+        // Fall back to restarting playback (e.g., for transcoding scenarios or unmapped tracks)
+        Debug.WriteLine($"Restarting playback for subtitle track {track.JellyfinIndex}");
         RestartPlaybackWithCurrentPosition();
     }
+
+    #region Playback Setup Helpers
+
+    /// <summary>
+    /// Creates a MediaSource from a URI, handling adaptive streaming if needed.
+    /// </summary>
+    private static async Task<MediaSource> CreateMediaSourceAsync(Uri mediaUri, bool isAdaptive)
+    {
+        if (isAdaptive)
+        {
+            AdaptiveMediaSourceCreationResult result = await AdaptiveMediaSource.CreateFromUriAsync(mediaUri);
+            if (result.Status == AdaptiveMediaSourceCreationStatus.Success)
+            {
+                AdaptiveMediaSource ams = result.MediaSource;
+                ams.InitialBitrate = ams.AvailableBitrates.Max();
+                return MediaSource.CreateFromAdaptiveMediaSource(ams);
+            }
+        }
+
+        return MediaSource.CreateFromUri(mediaUri);
+    }
+
+    /// <summary>
+    /// Cleans up the current playback item, unsubscribing from events and disposing resources.
+    /// </summary>
+    private void CleanupCurrentPlaybackItem()
+    {
+        if (_currentPlaybackItem is not null)
+        {
+            _currentPlaybackItem.TimedMetadataTracksChanged -= OnTimedMetadataTracksChanged;
+            _currentPlaybackItem.Source?.Dispose();
+        }
+
+        _currentPlaybackItem = null;
+        _isDirectPlay = false;
+    }
+
+    /// <summary>
+    /// Fetches playback info from the Jellyfin API.
+    /// </summary>
+    private async Task<(MediaSourceInfo? MediaSource, string? PlaySessionId)> GetPlaybackInfoAsync(
+        Guid itemId,
+        string? mediaSourceId,
+        int? audioStreamIndex,
+        int? subtitleStreamIndex)
+    {
+        DeviceProfile deviceProfile = _deviceProfileManager.Profile;
+
+        // Note: This mutates the shared device profile. That's probably OK as long as all accesses do this.
+        // TODO: Look into making a copy instead.
+        deviceProfile.MaxStreamingBitrate = await DetectBitrateAsync();
+
+        PlaybackInfoDto playbackInfo = new()
+        {
+            DeviceProfile = deviceProfile,
+            MediaSourceId = mediaSourceId,
+            AudioStreamIndex = audioStreamIndex,
+            SubtitleStreamIndex = subtitleStreamIndex,
+        };
+
+        PlaybackInfoResponse? response = await _jellyfinApiClient.Items[itemId].PlaybackInfo.PostAsync(playbackInfo);
+
+        if (response?.MediaSources is null || response.MediaSources.Count == 0)
+        {
+            return (null, null);
+        }
+
+        return (response.MediaSources[0], response.PlaySessionId);
+    }
+
+    #endregion
 
     private async void RestartPlaybackWithCurrentPosition()
     {
@@ -638,92 +705,164 @@ internal sealed partial class VideoViewModel : ObservableObject
 
         try
         {
-            // Save current position
+            // Save current position before restarting
             TimeSpan currentPosition = _playerElement.MediaPlayer.PlaybackSession.Position;
-
-            // Get new playback info with updated track selections
-            DeviceProfile deviceProfile = _deviceProfileManager.Profile;
-            deviceProfile.MaxStreamingBitrate = await DetectBitrateAsync();
-
-            PlaybackInfoDto playbackInfo = new()
-            {
-                DeviceProfile = deviceProfile,
-                MediaSourceId = _currentMediaSource.Id,
-                AudioStreamIndex = _playbackProgressInfo?.AudioStreamIndex,
-                SubtitleStreamIndex = _playbackProgressInfo?.SubtitleStreamIndex,
-            };
-
-            PlaybackInfoResponse? playbackInfoResponse = await _jellyfinApiClient.Items[_currentItem.Id!.Value].PlaybackInfo.PostAsync(playbackInfo);
-            if (playbackInfoResponse?.MediaSources is null || playbackInfoResponse.MediaSources.Count == 0)
-            {
-                return;
-            }
-
-            MediaSourceInfo mediaSourceInfo = playbackInfoResponse.MediaSources[0];
-            _currentMediaSource = mediaSourceInfo;
-
-            // Update play session
-            _playbackProgressInfo?.PlaySessionId = playbackInfoResponse.PlaySessionId;
-
-            // Build new URI
-            Uri? mediaUri = BuildMediaUri(mediaSourceInfo);
-            if (mediaUri is null)
-            {
-                return;
-            }
-
-            bool isAdaptive = !mediaSourceInfo.SupportsDirectPlay.GetValueOrDefault()
-                           && !mediaSourceInfo.SupportsDirectStream.GetValueOrDefault()
-                           && mediaSourceInfo.TranscodingSubProtocol == MediaSourceInfo_TranscodingSubProtocol.Hls;
-
-            // Create new media source
-#pragma warning disable CA2000 // Dispose objects before losing scope. The media source is assigned to the player and disposed on track change or stop.
-            MediaSource mediaSource;
-            if (isAdaptive)
-            {
-                AdaptiveMediaSourceCreationResult result = await AdaptiveMediaSource.CreateFromUriAsync(mediaUri);
-                if (result.Status == AdaptiveMediaSourceCreationStatus.Success)
-                {
-                    AdaptiveMediaSource ams = result.MediaSource;
-                    ams.InitialBitrate = ams.AvailableBitrates.Max();
-                    mediaSource = MediaSource.CreateFromAdaptiveMediaSource(ams);
-                }
-                else
-                {
-                    mediaSource = MediaSource.CreateFromUri(mediaUri);
-                }
-            }
-            else
-            {
-                mediaSource = MediaSource.CreateFromUri(mediaUri);
-            }
-#pragma warning restore CA2000 // Dispose objects before losing scope
-
-            // Dispose old media source
-            if (_playerElement.Source is MediaPlaybackItem oldItem)
-            {
-                oldItem.Source?.Dispose();
-            }
-            else if (_playerElement.Source is MediaSource oldSource)
-            {
-                oldSource.Dispose();
-            }
-
-            // Start playback at the saved position
-            MediaPlaybackItem playbackItem = new(mediaSource);
-            _playerElement.Source = playbackItem;
-            _playerElement.MediaPlayer.Play();
-
-            // Seek to saved position after a short delay to let playback start
-            await Task.Delay(500);
-            if (_playerElement.MediaPlayer.PlaybackSession.CanSeek)
-            {
-                _playerElement.MediaPlayer.PlaybackSession.Position = currentPosition;
-            }
+            await StartPlaybackAsync(_currentMediaSource.Id, currentPosition);
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Error restarting playback: {ex}");
+        }
+    }
+
+    /// <summary>
+    /// Starts or restarts playback with the specified media source and position.
+    /// </summary>
+    /// <param name="mediaSourceId">The media source ID to play.</param>
+    /// <param name="startPosition">The position to start playback from.</param>
+    private async Task StartPlaybackAsync(string? mediaSourceId, TimeSpan startPosition)
+    {
+        if (_currentItem is null || _playbackProgressInfo is null)
+        {
+            return;
+        }
+
+        // Get playback info with current track selections
+        (MediaSourceInfo? mediaSourceInfo, string? playSessionId) = await GetPlaybackInfoAsync(
+            _currentItem.Id!.Value,
+            mediaSourceId,
+            _playbackProgressInfo.AudioStreamIndex,
+            _playbackProgressInfo.SubtitleStreamIndex);
+
+        if (mediaSourceInfo is null)
+        {
+            return;
+        }
+
+        _currentMediaSource = mediaSourceInfo;
+
+        // Update play session and media source ID
+        _playbackProgressInfo.PlaySessionId = playSessionId;
+        _playbackProgressInfo.MediaSourceId = mediaSourceInfo.Id;
+
+        // Populate audio and subtitle track lists
+        PopulateTrackLists(mediaSourceInfo, _playbackProgressInfo.AudioStreamIndex, _playbackProgressInfo.SubtitleStreamIndex);
+
+        // Create new playback item
+        MediaPlaybackItem? playbackItem = await CreatePlaybackItemAsync(mediaSourceInfo, startPosition);
+        if (playbackItem is null)
+        {
+            return;
+        }
+
+        // Set display mode based on video stream properties (may change on restart if transcoding)
+        MediaStream videoStream = mediaSourceInfo.MediaStreams!.First(stream => stream.Type == MediaStream_Type.Video);
+        await DisplayModeManager.SetBestDisplayModeAsync(
+            (uint)videoStream.Width!.Value,
+            (uint)videoStream.Height!.Value,
+            (double)videoStream.RealFrameRate!.Value,
+            videoStream.VideoRangeType!.Value);
+
+        // Start playback
+        _playerElement!.Source = playbackItem;
+        _playerElement.MediaPlayer!.Play();
+    }
+
+    /// <summary>
+    /// Creates a MediaPlaybackItem and sets it up with event handlers.
+    /// Cleans up any existing playback item first.
+    /// </summary>
+    private async Task<MediaPlaybackItem?> CreatePlaybackItemAsync(MediaSourceInfo mediaSourceInfo, TimeSpan startPosition)
+    {
+        Uri? mediaUri = BuildMediaUri(mediaSourceInfo);
+        if (mediaUri is null)
+        {
+            return null;
+        }
+
+        bool isAdaptive = !mediaSourceInfo.SupportsDirectPlay.GetValueOrDefault()
+                       && !mediaSourceInfo.SupportsDirectStream.GetValueOrDefault()
+                       && mediaSourceInfo.TranscodingSubProtocol == MediaSourceInfo_TranscodingSubProtocol.Hls;
+
+        MediaSource mediaSource = await CreateMediaSourceAsync(mediaUri, isAdaptive);
+
+        // Add all external subtitles upfront for seamless switching
+        AddAllExternalSubtitles(mediaSource, mediaSourceInfo);
+
+        MediaPlaybackItem? playbackItem = new(mediaSource, startPosition);
+
+        // Cleanup old playback item if any
+        CleanupCurrentPlaybackItem();
+
+        _currentPlaybackItem = playbackItem;
+        _isDirectPlay = mediaSourceInfo.SupportsDirectPlay.GetValueOrDefault() || mediaSourceInfo.SupportsDirectStream.GetValueOrDefault();
+
+        // Subscribe to track change events for presenting default subtitle
+        playbackItem.TimedMetadataTracksChanged += OnTimedMetadataTracksChanged;
+
+        return playbackItem;
+    }
+
+    /// <summary>
+    /// Determines if a subtitle format is supported by UWP MediaPlayer.
+    /// </summary>
+    /// <param name="stream">The subtitle media stream to check.</param>
+    /// <returns>True if the subtitle format is supported for playback.</returns>
+    private static bool IsSubtitleFormatSupported(MediaStream stream)
+    {
+        if (stream.Codec is null)
+        {
+            return false;
+        }
+
+        return stream.IsExternal.GetValueOrDefault()
+            ? DeviceProfileManager.SupportedExternalSubtitleFormats.Contains(stream.Codec)
+            : DeviceProfileManager.SupportedEmbeddedSubtitleFormats.Contains(stream.Codec);
+    }
+
+    /// <summary>
+    /// Adds all external subtitles in supported formats to the media source for seamless switching.
+    /// UWP TimedTextSource only supports SRT (subrip) and VTT formats.
+    /// External subtitles are added in the same order as they appear in MediaStreams.
+    /// </summary>
+    private void AddAllExternalSubtitles(MediaSource mediaSource, MediaSourceInfo mediaSourceInfo)
+    {
+        if (mediaSourceInfo.MediaStreams is null)
+        {
+            return;
+        }
+
+        foreach (MediaStream subtitleTrack in mediaSourceInfo.MediaStreams
+            .Where(s => s.Type == MediaStream_Type.Subtitle && s.IsExternal.GetValueOrDefault()))
+        {
+            if (!IsSubtitleFormatSupported(subtitleTrack))
+            {
+                Debug.WriteLine($"Skipping unsupported external subtitle format: {subtitleTrack.Codec} (index {subtitleTrack.Index})");
+                continue;
+            }
+
+            string? subtitleUrl = subtitleTrack.DeliveryUrl;
+            if (string.IsNullOrEmpty(subtitleUrl))
+            {
+                Debug.WriteLine($"Subtitle track {subtitleTrack.Index} has no delivery URL.");
+                continue;
+            }
+
+            if (!subtitleTrack.IsExternalUrl.GetValueOrDefault())
+            {
+                subtitleUrl = _sdkClientSettings.ServerUrl + subtitleUrl;
+            }
+
+            if (Uri.TryCreate(subtitleUrl, UriKind.Absolute, out Uri? subtitleUri))
+            {
+                TimedTextSource timedTextSource = TimedTextSource.CreateFromUri(subtitleUri);
+                mediaSource.ExternalTimedTextSources.Add(timedTextSource);
+                Debug.WriteLine($"Added external subtitle (index {subtitleTrack.Index}): {subtitleUri}");
+            }
+            else
+            {
+                Debug.WriteLine($"Failed to parse subtitle URL: {subtitleUrl}");
+            }
         }
     }
 
