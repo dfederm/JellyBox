@@ -12,6 +12,29 @@ namespace JellyBox.Services;
 internal sealed class DeviceProfileManager
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes
 {
+    // Supported embedded subtitle formats for UWP MediaPlayer
+    public static readonly HashSet<string> SupportedEmbeddedSubtitleFormats = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "subrip",
+        "srt",
+        "vtt",
+        "webvtt",
+        "mov_text",  // MP4 timed text
+        "ass",       // Basic support (styling stripped). TODO: Can we render it manually?
+        "ssa",       // Basic support (styling stripped). TODO: Can we render it manually?
+    };
+
+    public static readonly HashSet<string> SupportedExternalSubtitleFormats = new(StringComparer.OrdinalIgnoreCase)
+    {
+        // UWP TimedTextSource supports SRT and VTT natively.
+        "subrip",
+        "srt",
+        "vtt",
+        "webvtt",
+
+        // "pgssub" // PGS subtitles are not supported natively. TODO: Can we render it manually?
+    };
+
     public DeviceProfile Profile { get; private set; } = null!; // TODO
 
     // This logic is adapted from the web client's browserDeviceProfile.js
@@ -1070,64 +1093,24 @@ internal sealed class DeviceProfileManager
         }
 
         // Subtitle profiles
-        // External vtt or burn in
-        string subtitleBurninSetting = ""; // TODO: appSettings.get("subtitleburnin");
-#pragma warning disable CA1508 // Avoid dead conditional code
-        if (subtitleBurninSetting != "all")
-#pragma warning restore CA1508 // Avoid dead conditional code
+        foreach (string subtitleFormat in SupportedEmbeddedSubtitleFormats)
         {
             profile.SubtitleProfiles.Add(
                 new SubtitleProfile
                 {
-                    Format = "subrip",
+                    Format = subtitleFormat,
+                    Method = SubtitleProfile_Method.Embed,
+                });
+        }
+
+        foreach (string subtitleFormat in SupportedExternalSubtitleFormats)
+        {
+            profile.SubtitleProfiles.Add(
+                new SubtitleProfile
+                {
+                    Format = subtitleFormat,
                     Method = SubtitleProfile_Method.External,
                 });
-
-            bool supportsTextTracks = false; // TODO: Check
-            if (supportsTextTracks)
-            {
-                profile.SubtitleProfiles.Add(
-                    new SubtitleProfile
-                    {
-                        Format = "vtt",
-                        Method = SubtitleProfile_Method.External,
-                    });
-            }
-
-            bool enableSsaRender = false; // TODO: Check settings
-#pragma warning disable CA1508 // Avoid dead conditional code
-            if (!enableSsaRender && subtitleBurninSetting != "allcomplexformats")
-#pragma warning restore CA1508 // Avoid dead conditional code
-            {
-                profile.SubtitleProfiles.Add(
-                    new SubtitleProfile
-                    {
-                        Format = "ass",
-                        Method = SubtitleProfile_Method.External
-                    });
-                profile.SubtitleProfiles.Add(
-                    new SubtitleProfile
-                    {
-                        Format = "ssa",
-                        Method = SubtitleProfile_Method.External
-                    });
-            }
-
-            // TODO: Can we overlay an image on top?
-            /*
-            if (options.enablePgsRender !== false
-                && appSettings.get("subtitlerenderpgs") == "true"
-                && subtitleBurninSetting != "allcomplexformats"
-                && subtitleBurninSetting != "onlyimageformats")
-            {
-                profile.SubtitleProfiles.Add(
-                    new SubtitleProfile
-                    {
-                        Format = "pgssub",
-                        Method = SubtitleProfile_Method.External
-                    });
-            }
-            */
         }
 
         Profile = profile;

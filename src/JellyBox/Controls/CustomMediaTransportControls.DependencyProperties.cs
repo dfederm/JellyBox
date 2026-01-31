@@ -1,5 +1,6 @@
 using System.Windows.Input;
 using Windows.UI.Xaml;
+using Windows.UI.Xaml.Media;
 
 namespace JellyBox.Controls;
 
@@ -115,6 +116,16 @@ internal sealed partial class CustomMediaTransportControls
     {
         get => (double)GetValue(PlaybackSpeedProperty);
         set => SetValue(PlaybackSpeedProperty, value);
+    }
+
+    public static readonly DependencyProperty StretchModeProperty = DependencyProperty.Register(
+        nameof(StretchMode), typeof(Stretch), typeof(CustomMediaTransportControls),
+        new PropertyMetadata(Stretch.Uniform, OnStretchModeChanged));
+
+    public Stretch StretchMode
+    {
+        get => (Stretch)GetValue(StretchModeProperty);
+        set => SetValue(StretchModeProperty, value);
     }
 
     #endregion
@@ -264,6 +275,9 @@ internal sealed partial class CustomMediaTransportControls
 
     private static void OnPlaybackSpeedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((CustomMediaTransportControls)d).UpdatePlaybackSpeedCheckedState();
+
+    private static void OnStretchModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        => ((CustomMediaTransportControls)d).UpdateStretchModeCheckedState();
 
     #endregion
 }

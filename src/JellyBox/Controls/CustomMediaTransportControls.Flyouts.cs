@@ -8,7 +8,10 @@ namespace JellyBox.Controls;
 /// <summary>
 /// Represents a selectable audio or subtitle track.
 /// </summary>
-internal sealed record TrackInfo(int Index, string DisplayName);
+/// <param name="JellyfinIndex">The Jellyfin stream index.</param>
+/// <param name="UwpTrackIndex">The UWP MediaPlayer track index, or null if not directly playable.</param>
+/// <param name="DisplayName">The display name for the track.</param>
+internal sealed record TrackInfo(int JellyfinIndex, int? UwpTrackIndex, string DisplayName);
 
 internal sealed partial class CustomMediaTransportControls
 {
@@ -41,12 +44,7 @@ internal sealed partial class CustomMediaTransportControls
         _audioTracksFlyout = new() { Placement = FlyoutPlacementMode.Top };
         foreach (TrackInfo track in AudioTracks)
         {
-            ToggleMenuFlyoutItem item = new()
-            {
-                Text = track.DisplayName,
-                Tag = track.Index,
-                IsChecked = track.Index == SelectedAudioIndex
-            };
+            ToggleMenuFlyoutItem item = CreateFlyoutMenuItem(track, SelectedAudioIndex);
             item.Click += OnAudioTrackItemClicked;
             _audioTracksFlyout.Items.Add(item);
         }
@@ -63,18 +61,18 @@ internal sealed partial class CustomMediaTransportControls
 
         foreach (MenuFlyoutItemBase menuItem in _audioTracksFlyout.Items)
         {
-            if (menuItem is ToggleMenuFlyoutItem toggleItem)
+            if (menuItem is ToggleMenuFlyoutItem toggleItem && toggleItem.Tag is TrackInfo track)
             {
-                toggleItem.IsChecked = toggleItem.Tag is int index && index == SelectedAudioIndex;
+                toggleItem.IsChecked = track.JellyfinIndex == SelectedAudioIndex;
             }
         }
     }
 
     private void OnAudioTrackItemClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is ToggleMenuFlyoutItem item && item.Tag is int index)
+        if (sender is ToggleMenuFlyoutItem item && item.Tag is TrackInfo track)
         {
-            SelectAudioTrackCommand?.Execute(index);
+            SelectAudioTrackCommand?.Execute(track);
         }
     }
 
@@ -100,12 +98,9 @@ internal sealed partial class CustomMediaTransportControls
         _subtitlesFlyout = new() { Placement = FlyoutPlacementMode.Top };
 
         // Add "Off" option at the top
-        ToggleMenuFlyoutItem offItem = new()
-        {
-            Text = "Off",
-            Tag = -1,
-            IsChecked = SelectedSubtitleIndex == -1
-        };
+        TrackInfo offTrack = new(-1, UwpTrackIndex: null, "Off");
+        ToggleMenuFlyoutItem offItem = CreateFlyoutMenuItem(offTrack, SelectedSubtitleIndex);
+
         offItem.Click += OnSubtitleTrackItemClicked;
         _subtitlesFlyout.Items.Add(offItem);
 
@@ -113,12 +108,7 @@ internal sealed partial class CustomMediaTransportControls
 
         foreach (TrackInfo track in SubtitleTracks)
         {
-            ToggleMenuFlyoutItem item = new()
-            {
-                Text = track.DisplayName,
-                Tag = track.Index,
-                IsChecked = track.Index == SelectedSubtitleIndex
-            };
+            ToggleMenuFlyoutItem item = CreateFlyoutMenuItem(track, SelectedSubtitleIndex);
             item.Click += OnSubtitleTrackItemClicked;
             _subtitlesFlyout.Items.Add(item);
         }
@@ -135,18 +125,18 @@ internal sealed partial class CustomMediaTransportControls
 
         foreach (MenuFlyoutItemBase menuItem in _subtitlesFlyout.Items)
         {
-            if (menuItem is ToggleMenuFlyoutItem toggleItem)
+            if (menuItem is ToggleMenuFlyoutItem toggleItem && toggleItem.Tag is TrackInfo track)
             {
-                toggleItem.IsChecked = toggleItem.Tag is int index && index == SelectedSubtitleIndex;
+                toggleItem.IsChecked = track.JellyfinIndex == SelectedSubtitleIndex;
             }
         }
     }
 
     private void OnSubtitleTrackItemClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is ToggleMenuFlyoutItem item && item.Tag is int index)
+        if (sender is ToggleMenuFlyoutItem item && item.Tag is TrackInfo track)
         {
-            SelectSubtitleTrackCommand?.Execute(index);
+            SelectSubtitleTrackCommand?.Execute(track);
         }
     }
 
@@ -236,22 +226,26 @@ internal sealed partial class CustomMediaTransportControls
         }
     }
 
+    private void UpdateStretchModeCheckedState()
+    {
+        if (_aspectRatioSubItem is null)
+        {
+            return;
+        }
+
+        foreach (MenuFlyoutItemBase subMenuItem in _aspectRatioSubItem.Items)
+        {
+            if (subMenuItem is ToggleMenuFlyoutItem toggleItem)
+            {
+                toggleItem.IsChecked = toggleItem.Tag is Stretch itemStretch && itemStretch == StretchMode;
+            }
+        }
+    }
+
     private void OnAspectRatioItemClicked(object sender, RoutedEventArgs e)
     {
         if (sender is ToggleMenuFlyoutItem clickedItem && clickedItem.Tag is Stretch stretch)
         {
-            // Update checked state for all aspect items
-            if (_aspectRatioSubItem is not null)
-            {
-                foreach (MenuFlyoutItemBase subMenuItem in _aspectRatioSubItem.Items)
-                {
-                    if (subMenuItem is ToggleMenuFlyoutItem toggleItem)
-                    {
-                        toggleItem.IsChecked = toggleItem.Tag is Stretch itemStretch && itemStretch == stretch;
-                    }
-                }
-            }
-
             ChangeStretchModeCommand?.Execute(stretch);
         }
     }
@@ -262,4 +256,12 @@ internal sealed partial class CustomMediaTransportControls
     }
 
     #endregion
+
+    private static ToggleMenuFlyoutItem CreateFlyoutMenuItem(TrackInfo track, int selectedIndex)
+        => new()
+        {
+            Text = track.DisplayName,
+            Tag = track,
+            IsChecked = track.JellyfinIndex == selectedIndex
+        };
 }
