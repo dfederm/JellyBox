@@ -1,6 +1,8 @@
-﻿using JellyBox.Services;
 using JellyBox.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using Windows.System;
+using Windows.UI.Core;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Navigation;
@@ -9,20 +11,21 @@ namespace JellyBox;
 
 internal sealed partial class MainPage : Page
 {
-    private readonly NavigationManager _navigationManager;
+    private FrameworkElement? _lastFocusedElement;
 
     public MainPage()
     {
         InitializeComponent();
 
-        _navigationManager = AppServices.Instance.ServiceProvider.GetRequiredService<NavigationManager>();
-
         ViewModel = AppServices.Instance.ServiceProvider.GetRequiredService<MainPageViewModel>();
+        ViewModel.IsMenuOpenChanged += OnIsMenuOpenChanged;
 
         // Cache the page state so the ContentFrame's BackStack can be preserved
         NavigationCacheMode = NavigationCacheMode.Required;
 
         KeyDown += OnKeyDown;
+
+        SlideInAnimation.Completed += SlideInCompleted;
 
         Loaded += (sender, e) =>
         {
@@ -40,71 +43,149 @@ internal sealed partial class MainPage : Page
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        _navigationManager.RegisterContentFrame(ContentFrame);
-
         ViewModel.HandleParameters(e.Parameter as Parameters, ContentFrame);
 
         base.OnNavigatedTo(e);
     }
 
+    private void OnIsMenuOpenChanged(bool isOpen)
+    {
+        if (isOpen)
+        {
+            OpenNavigationOverlay();
+        }
+        else
+        {
+            CloseNavigationOverlay();
+        }
+    }
+
+    private void OpenNavigationOverlay()
+    {
+        // Store current focus to restore later
+        _lastFocusedElement = FocusManager.GetFocusedElement() as FrameworkElement;
+
+        NavigationOverlay.Visibility = Visibility.Visible;
+        SlideInAnimation.Begin();
+    }
+
+    private void CloseNavigationOverlay()
+    {
+        SlideOutAnimation.Begin();
+    }
+
+    private void SlideInCompleted(object? sender, object e)
+    {
+        // Focus the navigation panel after animation completes
+        if (ViewModel.IsMenuOpen)
+        {
+            _ = Dispatcher.RunAsync(
+                CoreDispatcherPriority.Normal,
+                () => NavigationPanel.Focus(FocusState.Keyboard));
+        }
+    }
+
+    private void SlideOutCompleted(object sender, object e)
+    {
+        NavigationOverlay.Visibility = Visibility.Collapsed;
+
+        // Restore focus to previously focused element
+        if (_lastFocusedElement is Control control)
+        {
+            control.Focus(FocusState.Keyboard);
+        }
+
+        _lastFocusedElement = null;
+    }
+
     private void ContentFrameNavigated(object sender, NavigationEventArgs e)
     {
         _ = Dispatcher.RunAsync(
-            Windows.UI.Core.CoreDispatcherPriority.Normal,
+            CoreDispatcherPriority.Normal,
             () =>
             {
-                ViewModel.IsMenuOpen = false;
+                ViewModel.CloseNavigationCommand.Execute(null);
                 ViewModel.UpdateSelectedMenuItem();
             });
     }
 
+    private void CloseNavigation(object sender, TappedRoutedEventArgs e)
+    {
+        ViewModel.CloseNavigationCommand.Execute(null);
+    }
+
     /// <summary>
-    /// Default keyboard focus movement for any unhandled keyboarding
+    /// Keyboard and gamepad input handling.
+    /// Only handles commands and nav-menu-specific logic.
+    /// Directional focus movement is handled by XYFocusKeyboardNavigation in XAML.
     /// </summary>
     private void OnKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        FocusNavigationDirection direction = FocusNavigationDirection.None;
         switch (e.Key)
         {
-            case Windows.System.VirtualKey.Left:
-            case Windows.System.VirtualKey.GamepadDPadLeft:
-            case Windows.System.VirtualKey.GamepadLeftThumbstickLeft:
-            case Windows.System.VirtualKey.NavigationLeft:
+            // Back gesture - close navigation if open
+            case VirtualKey.Back:
+            case VirtualKey.GamepadB:
             {
-                direction = FocusNavigationDirection.Left;
-                break;
-            }
-            case Windows.System.VirtualKey.Right:
-            case Windows.System.VirtualKey.GamepadDPadRight:
-            case Windows.System.VirtualKey.GamepadLeftThumbstickRight:
-            case Windows.System.VirtualKey.NavigationRight:
-            {
-                direction = FocusNavigationDirection.Right;
-                break;
-            }
-            case Windows.System.VirtualKey.Up:
-            case Windows.System.VirtualKey.GamepadDPadUp:
-            case Windows.System.VirtualKey.GamepadLeftThumbstickUp:
-            case Windows.System.VirtualKey.NavigationUp:
-            {
-                direction = FocusNavigationDirection.Up;
-                break;
-            }
-            case Windows.System.VirtualKey.Down:
-            case Windows.System.VirtualKey.GamepadDPadDown:
-            case Windows.System.VirtualKey.GamepadLeftThumbstickDown:
-            case Windows.System.VirtualKey.NavigationDown:
-            {
-                direction = FocusNavigationDirection.Down;
-                break;
-            }
-        }
+                if (ViewModel.IsMenuOpen)
+                {
+                    ViewModel.CloseNavigationCommand.Execute(null);
+                    e.Handled = true;
+                }
 
-        if (direction != FocusNavigationDirection.None)
-        {
-            if (FocusManager.TryMoveFocus(direction))
+                break;
+            }
+
+            // Toggle navigation menu
+            case VirtualKey.GamepadMenu:
+            case VirtualKey.GamepadView:
+            case VirtualKey.M:
             {
+                ViewModel.ToggleNavigationCommand.Execute(null);
                 e.Handled = true;
+                break;
+            }
+
+            // Close navigation menu
+            case VirtualKey.Escape:
+            {
+                if (ViewModel.IsMenuOpen)
+                {
+                    ViewModel.CloseNavigationCommand.Execute(null);
+                    e.Handled = true;
+                }
+
+                break;
+            }
+
+            // Right closes nav menu when open
+            case VirtualKey.Right:
+            case VirtualKey.GamepadDPadRight:
+            case VirtualKey.GamepadLeftThumbstickRight:
+            case VirtualKey.NavigationRight:
+            {
+                if (ViewModel.IsMenuOpen)
+                {
+                    ViewModel.CloseNavigationCommand.Execute(null);
+                    e.Handled = true;
+                }
+
+                break;
+            }
+
+            // Left at edge opens nav menu
+            case VirtualKey.Left:
+            case VirtualKey.GamepadDPadLeft:
+            case VirtualKey.GamepadLeftThumbstickLeft:
+            case VirtualKey.NavigationLeft:
+            {
+                if (!ViewModel.IsMenuOpen && !FocusManager.TryMoveFocus(FocusNavigationDirection.Left))
+                {
+                    ViewModel.OpenNavigationCommand.Execute(null);
+                    e.Handled = true;
+                }
+
+                break;
             }
         }
     }

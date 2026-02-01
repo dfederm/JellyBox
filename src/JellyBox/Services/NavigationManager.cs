@@ -224,34 +224,31 @@ internal sealed class NavigationManager
     /// <param name="e">Event data describing the conditions that led to the event.</param>
     private void AcceleratorKeyActivated(CoreDispatcher sender, AcceleratorKeyEventArgs e)
     {
-        var virtualKey = e.VirtualKey;
-
-        // Only investigate further when Left, Right, or the dedicated Previous or Next keys
-        // are pressed
-        if ((e.EventType == CoreAcceleratorKeyEventType.SystemKeyDown
-            || e.EventType == CoreAcceleratorKeyEventType.KeyDown) &&
-            (
-            virtualKey == VirtualKey.Left || virtualKey == VirtualKey.Right
-            || virtualKey == VirtualKey.GoBack || virtualKey == VirtualKey.GoForward
-            )
-            )
+        if (e.EventType is not CoreAcceleratorKeyEventType.SystemKeyDown
+            and not CoreAcceleratorKeyEventType.KeyDown)
         {
-            var coreWindow = Window.Current.CoreWindow;
-            var downState = CoreVirtualKeyStates.Down;
-            bool menuKey = (coreWindow.GetKeyState(VirtualKey.Menu) & downState) == downState;
-            bool controlKey = (coreWindow.GetKeyState(VirtualKey.Control) & downState) == downState;
-            bool shiftKey = (coreWindow.GetKeyState(VirtualKey.Shift) & downState) == downState;
-            bool noModifiers = !menuKey && !controlKey && !shiftKey;
-            bool onlyAlt = menuKey && !controlKey && !shiftKey;
+            return;
+        }
 
-            if ((virtualKey == VirtualKey.GoBack && noModifiers) || (virtualKey == VirtualKey.Left && onlyAlt))
-            {
-                e.Handled = GoBack();
-            }
-            else if ((virtualKey == VirtualKey.GoForward && noModifiers) || (virtualKey == VirtualKey.Right && onlyAlt))
-            {
-                e.Handled = GoForward();
-            }
+        CoreWindow coreWindow = Window.Current.CoreWindow;
+        CoreVirtualKeyStates downState = CoreVirtualKeyStates.Down;
+        bool menuKey = (coreWindow.GetKeyState(VirtualKey.Menu) & downState) == downState;
+        bool controlKey = (coreWindow.GetKeyState(VirtualKey.Control) & downState) == downState;
+        bool shiftKey = (coreWindow.GetKeyState(VirtualKey.Shift) & downState) == downState;
+        bool noModifiers = !menuKey && !controlKey && !shiftKey;
+        bool onlyAlt = menuKey && !controlKey && !shiftKey;
+        VirtualKey virtualKey = e.VirtualKey;
+
+        if ((virtualKey is VirtualKey.GoBack && noModifiers)
+            || (virtualKey is VirtualKey.Left && onlyAlt)
+            || (virtualKey is VirtualKey.Back && noModifiers))
+        {
+            e.Handled = GoBack();
+        }
+        else if ((virtualKey is VirtualKey.GoForward && noModifiers)
+            || (virtualKey is VirtualKey.Right && onlyAlt))
+        {
+            e.Handled = GoForward();
         }
     }
 
