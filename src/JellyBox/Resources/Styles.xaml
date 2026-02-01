@@ -1,4 +1,4 @@
-﻿<ResourceDictionary
+<ResourceDictionary
     x:Class="JellyBox.Resources.Styles"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -11,32 +11,246 @@
 
     <FontFamily x:Key="SegoeIcons">Segoe MDL2 Assets</FontFamily>
 
-    <SolidColorBrush x:Key="Color0" Color="#101010" />
-    <SolidColorBrush x:Key="Color10" Color="#202020" />
-    <SolidColorBrush x:Key="Color20" Color="#303030" />
-    <SolidColorBrush x:Key="Color80" Color="#828282" />
-    <SolidColorBrush x:Key="Color90" Color="#a9a9a9" />
-    <SolidColorBrush x:Key="Color100" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="PrimaryColor" Color="#00A4DC" />
-    <SolidColorBrush x:Key="PrimaryColorHover" Color="#0CB0E8" />
-    <SolidColorBrush x:Key="SecondaryColor" Color="#303030" />
-    <SolidColorBrush x:Key="SecondaryColorHover" Color="#383838" />
+    <!-- Semantic Color Palette -->
+    <SolidColorBrush x:Key="BackgroundBase" Color="#0A0A0A" />
+    <SolidColorBrush x:Key="BackgroundElevated" Color="#141414" />
+    <SolidColorBrush x:Key="BackgroundCard" Color="#1A1A1A" />
+    <SolidColorBrush x:Key="BackgroundHover" Color="#222222" />
+    <SolidColorBrush x:Key="BorderSubtle" Color="#2A2A2A" />
+    <SolidColorBrush x:Key="BorderDefault" Color="#3A3A3A" />
+    <SolidColorBrush x:Key="TextMuted" Color="#909090" />
+    <SolidColorBrush x:Key="TextSecondary" Color="#B8B8B8" />
+    <SolidColorBrush x:Key="TextPrimary" Color="#F0F0F0" />
+    
+    <SolidColorBrush x:Key="AccentColor" Color="#00A4DC" />
+    <SolidColorBrush x:Key="AccentColorHover" Color="#0CB0E8" />
+    <SolidColorBrush x:Key="AccentColorGlow" Color="#4000A4DC" />
+    <SolidColorBrush x:Key="SurfaceSecondary" Color="#2A2A2A" />
+    <SolidColorBrush x:Key="SurfaceSecondaryHover" Color="#3A3A3A" />
+    <SolidColorBrush x:Key="FocusBorder" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="OverlayBackground" Color="#CC000000" />
 
-    <x:Double x:Key="FontS">14</x:Double>
-    <x:Double x:Key="FontM">16</x:Double>
-    <x:Double x:Key="FontL">20</x:Double>
+    <!-- TV-Optimized Font Sizes (10-foot UI) -->
+    <x:Double x:Key="FontXS">16</x:Double>
+    <x:Double x:Key="FontS">18</x:Double>
+    <x:Double x:Key="FontM">20</x:Double>
+    <x:Double x:Key="FontL">24</x:Double>
+    <x:Double x:Key="FontXL">28</x:Double>
+    <x:Double x:Key="FontXXL">36</x:Double>
+    <x:Double x:Key="FontHero">48</x:Double>
 
-    <FontFamily x:Key="ContentControlThemeFontFamily">/Fonts/NotoSans-Regular.ttf#Noto Sans</FontFamily>
+    <!-- Card Dimensions -->
+    <x:Double x:Key="CardPortraitWidth">200</x:Double>
+    <x:Double x:Key="CardPortraitHeight">300</x:Double>
+    <x:Double x:Key="CardBackdropWidth">320</x:Double>
+    <x:Double x:Key="CardBackdropHeight">180</x:Double>
+    <x:Double x:Key="CardSpacing">16</x:Double>
+    <CornerRadius x:Key="CardCornerRadius">8</CornerRadius>
+
+    <!-- Focus Animation Durations -->
+    <Duration x:Key="FocusAnimationDuration">0:0:0.2</Duration>
+    <Duration x:Key="FastAnimationDuration">0:0:0.15</Duration>
+    <Duration x:Key="SlowAnimationDuration">0:0:0.3</Duration>
+
+    <Style TargetType="GridViewItem">
+        <Setter Property="Margin" Value="8" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{StaticResource FocusBorder}" />
+        <Setter Property="FocusVisualSecondaryBrush" Value="Transparent" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="3" />
+        <Setter Property="FocusVisualMargin" Value="-4" />
+    </Style>
+
+    <Style TargetType="ListViewItem">
+        <Setter Property="Margin" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{StaticResource FocusBorder}" />
+        <Setter Property="FocusVisualSecondaryBrush" Value="Transparent" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="3" />
+        <Setter Property="FocusVisualMargin" Value="-4" />
+    </Style>
+
+    <Style x:Key="IconButton" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource SurfaceSecondary}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="FontFamily" Value="{StaticResource SegoeIcons}" />
+        <Setter Property="FontSize" Value="24" />
+        <Setter Property="Width" Value="56" />
+        <Setter Property="Height" Value="56" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="UseSystemFocusVisuals" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid x:Name="RootGrid" Background="Transparent">
+                        <Grid.RenderTransform>
+                            <CompositeTransform x:Name="ButtonTransform" ScaleX="1" ScaleY="1" />
+                        </Grid.RenderTransform>
+                        <Border
+                            x:Name="BackgroundBorder"
+                            Background="{StaticResource SurfaceSecondary}"
+                            CornerRadius="28"
+                            BorderThickness="3"
+                            BorderBrush="Transparent" />
+                        <ContentPresenter
+                            x:Name="ContentPresenter"
+                            Content="{TemplateBinding Content}"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            AutomationProperties.AccessibilityView="Raw" />
+
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <Storyboard>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ButtonTransform"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1"
+                                            Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ButtonTransform"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1"
+                                            Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </VisualState>
+
+                                <VisualState x:Name="PointerOver">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames
+                                            Storyboard.TargetName="BackgroundBorder"
+                                            Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource SurfaceSecondaryHover}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ButtonTransform"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1.1"
+                                            Duration="0:0:0.15">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ButtonTransform"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1.1"
+                                            Duration="0:0:0.15">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </VisualState>
+
+                                <VisualState x:Name="Pressed">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames
+                                            Storyboard.TargetName="BackgroundBorder"
+                                            Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource SurfaceSecondaryHover}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ButtonTransform"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="0.95"
+                                            Duration="0:0:0.1">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ButtonTransform"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="0.95"
+                                            Duration="0:0:0.1">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </VisualState>
+
+                                <VisualState x:Name="Disabled">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames
+                                            Storyboard.TargetName="BackgroundBorder"
+                                            Storyboard.TargetProperty="Background">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource BorderSubtle}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <ObjectAnimationUsingKeyFrames
+                                            Storyboard.TargetName="ContentPresenter"
+                                            Storyboard.TargetProperty="Foreground">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource TextMuted}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </VisualState>
+                            </VisualStateGroup>
+
+                            <VisualStateGroup x:Name="FocusStates">
+                                <VisualState x:Name="Focused">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames
+                                            Storyboard.TargetName="BackgroundBorder"
+                                            Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource FocusBorder}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ButtonTransform"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1.1"
+                                            Duration="0:0:0.15">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ButtonTransform"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1.1"
+                                            Duration="0:0:0.15">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Unfocused" />
+                                <VisualState x:Name="PointerFocused" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
     <Style x:Key="PrimaryButton" TargetType="Button">
         <Setter Property="Background" Value="{ThemeResource ButtonBackground}" />
-        <Setter Property="Foreground" Value="{StaticResource Color100}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
         <Setter Property="BorderBrush" Value="{ThemeResource ButtonBorderBrush}" />
         <Setter Property="BorderThickness" Value="{ThemeResource ButtonBorderThemeThickness}" />
         <Setter Property="Padding" Value="8,4,8,4" />
         <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="VerticalAlignment" Value="Center" />
-        <Setter Property="FontFamily" Value="{StaticResource ContentControlThemeFontFamily}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="FontSize" Value="{StaticResource FontM}" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
@@ -45,7 +259,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="RootGrid" Background="{StaticResource PrimaryColor}" CornerRadius="4">
+                    <Border x:Name="RootGrid" Background="{StaticResource AccentColor}" CornerRadius="4">
 
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
@@ -60,7 +274,7 @@
 
                                     <Storyboard>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource PrimaryColorHover}" />
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource AccentColorHover}" />
                                         </ObjectAnimationUsingKeyFrames>
                                         <PointerUpThemeAnimation Storyboard.TargetName="RootGrid" />
                                     </Storyboard>
@@ -70,7 +284,7 @@
 
                                     <Storyboard>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource PrimaryColorHover}" />
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource AccentColorHover}" />
                                         </ObjectAnimationUsingKeyFrames>
                                         <PointerDownThemeAnimation Storyboard.TargetName="RootGrid" />
                                     </Storyboard>
@@ -80,10 +294,10 @@
 
                                     <Storyboard>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource Color20}" />
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource BorderSubtle}" />
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter" Storyboard.TargetProperty="Foreground">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource Color80}" />
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource TextMuted}" />
                                         </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
@@ -108,7 +322,7 @@
 
     <Style x:Key="SecondaryButton" TargetType="Button">
         <Setter Property="Background" Value="{ThemeResource ButtonBackground}" />
-        <Setter Property="Foreground" Value="{StaticResource Color100}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
         <Setter Property="BorderBrush" Value="{ThemeResource ButtonBorderBrush}" />
         <Setter Property="BorderThickness" Value="{ThemeResource ButtonBorderThemeThickness}" />
         <Setter Property="Padding" Value="8,4,8,4" />
@@ -123,7 +337,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="RootGrid" Background="{StaticResource SecondaryColor}" CornerRadius="4">
+                    <Border x:Name="RootGrid" Background="{StaticResource SurfaceSecondary}" CornerRadius="4">
 
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
@@ -138,7 +352,7 @@
 
                                     <Storyboard>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource SecondaryColorHover}" />
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource SurfaceSecondaryHover}" />
                                         </ObjectAnimationUsingKeyFrames>
                                         <PointerUpThemeAnimation Storyboard.TargetName="RootGrid" />
                                     </Storyboard>
@@ -148,7 +362,7 @@
 
                                     <Storyboard>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource SecondaryColorHover}" />
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource SurfaceSecondaryHover}" />
                                         </ObjectAnimationUsingKeyFrames>
                                         <PointerDownThemeAnimation Storyboard.TargetName="RootGrid" />
                                     </Storyboard>
@@ -158,10 +372,10 @@
 
                                     <Storyboard>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource Color20}" />
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource BorderSubtle}" />
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter" Storyboard.TargetProperty="Foreground">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource Color80}" />
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource TextMuted}" />
                                         </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
@@ -313,7 +527,7 @@
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource CheckBoxCheckBackgroundStrokeChecked}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="NormalRectangle" Storyboard.TargetProperty="Fill">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource PrimaryColor}"/>
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource AccentColor}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="CheckGlyph" Storyboard.TargetProperty="Foreground">
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource CheckBoxCheckGlyphForegroundChecked}"/>
@@ -337,7 +551,7 @@
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource CheckBoxCheckBackgroundStrokeCheckedPointerOver}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="NormalRectangle" Storyboard.TargetProperty="Fill">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource PrimaryColorHover}"/>
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource AccentColorHover}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="CheckGlyph" Storyboard.TargetProperty="Foreground">
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource CheckBoxCheckGlyphForegroundCheckedPointerOver}"/>
@@ -512,7 +726,7 @@
     <Style x:Key="PrimaryTextBox"  TargetType="TextBox">
         <Setter Property="MinWidth" Value="{ThemeResource TextControlThemeMinWidth}" />
         <Setter Property="MinHeight" Value="40" />
-        <Setter Property="Foreground" Value="{StaticResource Color100}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
         <Setter Property="Background" Value="{ThemeResource TextControlBackground}" />
         <Setter Property="BorderBrush" Value="{ThemeResource TextControlBorderBrush}" />
         <Setter Property="SelectionHighlightColor" Value="{ThemeResource TextControlSelectionHighlightColor}" />
@@ -624,7 +838,7 @@
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource TextControlBorderBrushPointerOver}" />
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BorderElement" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource Color20}" />
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource BorderSubtle}" />
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PlaceholderTextContentPresenter" Storyboard.TargetProperty="Foreground">
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{Binding PlaceholderForeground, RelativeSource={RelativeSource TemplatedParent}, TargetNullValue={ThemeResource TextControlPlaceholderForegroundPointerOver}}" />
@@ -681,7 +895,7 @@
                         <Border x:Name="BorderElement"
                             Grid.Row="1"
                             CornerRadius="4"
-                            Background="{StaticResource Color10}"
+                            Background="{StaticResource BackgroundCard}"
                             BorderThickness="0"
                             Grid.ColumnSpan="2"
                             Grid.RowSpan="1" />
@@ -745,7 +959,7 @@
     </Style>
 
     <Style x:Key="PrimaryPasswordBox" TargetType="PasswordBox">
-        <Setter Property="Foreground" Value="{StaticResource Color100}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
         <Setter Property="Background" Value="{ThemeResource TextControlBackground}"/>
         <Setter Property="SelectionHighlightColor" Value="{ThemeResource TextControlSelectionHighlightColor}"/>
         <Setter Property="BorderBrush" Value="{ThemeResource TextControlBorderBrush}"/>
@@ -891,7 +1105,7 @@
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource TextControlBorderBrushPointerOver}"/>
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BorderElement" Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource Color20}" />
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource BorderSubtle}" />
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="PlaceholderTextContentPresenter" Storyboard.TargetProperty="Foreground">
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{ThemeResource TextControlPlaceholderForegroundPointerOver}"/>
@@ -946,7 +1160,7 @@
                             x:DeferLoadStrategy="Lazy"/>
                         <Border
                             x:Name="BorderElement"
-                            Background="{StaticResource Color10}"
+                            Background="{StaticResource BackgroundCard}"
                             BorderThickness="0"
                             CornerRadius="4"
                             Grid.Column="0"
