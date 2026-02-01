@@ -6,13 +6,77 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Background="{StaticResource BackgroundBase}">
-    <NavigationView
-            MenuItemsSource="{x:Bind ViewModel.NavigationItems, Mode=OneWay}"
-            ItemInvoked="{x:Bind ViewModel.NavigationItemSelected}"
-            IsPaneOpen="{x:Bind ViewModel.IsMenuOpen, Mode=OneWay}"
-            PaneDisplayMode="LeftCompact"
-            IsBackButtonVisible="Collapsed"
-            IsSettingsVisible="False">
+
+    <Grid XYFocusKeyboardNavigation="Enabled">
         <Frame x:Name="ContentFrame" />
-    </NavigationView>
+
+        <Grid
+            x:Name="NavigationOverlay"
+            Visibility="Collapsed"
+            XYFocusKeyboardNavigation="Enabled">
+
+            <Rectangle
+                Fill="{StaticResource OverlayBackground}"
+                Tapped="CloseNavigation" />
+
+            <NavigationView
+                x:Name="NavigationPanel"
+                HorizontalAlignment="Left"
+                Width="{StaticResource NavigationPanelWidth}"
+                Background="{StaticResource BackgroundElevated}"
+                MenuItemsSource="{x:Bind ViewModel.NavigationItems, Mode=OneWay}"
+                ItemInvoked="{x:Bind ViewModel.NavigationItemSelected}"
+                IsPaneOpen="True"
+                PaneDisplayMode="Left"
+                IsBackButtonVisible="Collapsed"
+                IsSettingsVisible="False"
+                IsPaneToggleButtonVisible="False"
+                OpenPaneLength="{StaticResource NavigationPanelWidth}"
+                CompactPaneLength="0">
+                <NavigationView.RenderTransform>
+                    <TranslateTransform x:Name="NavPanelTransform" X="-360" />
+                </NavigationView.RenderTransform>
+            </NavigationView>
+        </Grid>
+    </Grid>
+
+    <Page.Resources>
+        <Storyboard x:Name="SlideInAnimation">
+            <DoubleAnimation
+                Storyboard.TargetName="NavPanelTransform"
+                Storyboard.TargetProperty="X"
+                From="-360"
+                To="0"
+                Duration="0:0:0.25">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseOut" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation
+                Storyboard.TargetName="NavigationOverlay"
+                Storyboard.TargetProperty="Opacity"
+                From="0"
+                To="1"
+                Duration="0:0:0.2" />
+        </Storyboard>
+
+        <Storyboard x:Name="SlideOutAnimation" Completed="SlideOutCompleted">
+            <DoubleAnimation
+                Storyboard.TargetName="NavPanelTransform"
+                Storyboard.TargetProperty="X"
+                From="0"
+                To="-360"
+                Duration="0:0:0.2">
+                <DoubleAnimation.EasingFunction>
+                    <QuadraticEase EasingMode="EaseIn" />
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation
+                Storyboard.TargetName="NavigationOverlay"
+                Storyboard.TargetProperty="Opacity"
+                From="1"
+                To="0"
+                Duration="0:0:0.2" />
+        </Storyboard>
+    </Page.Resources>
 </Page>

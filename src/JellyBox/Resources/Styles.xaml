@@ -47,10 +47,32 @@
     <x:Double x:Key="CardSpacing">16</x:Double>
     <CornerRadius x:Key="CardCornerRadius">8</CornerRadius>
 
+    <!-- Navigation Dimensions -->
+    <x:Double x:Key="NavigationPanelWidth">360</x:Double>
+
     <!-- Focus Animation Durations -->
     <Duration x:Key="FocusAnimationDuration">0:0:0.2</Duration>
     <Duration x:Key="FastAnimationDuration">0:0:0.15</Duration>
     <Duration x:Key="SlowAnimationDuration">0:0:0.3</Duration>
+
+    <Style TargetType="NavigationViewItem">
+        <Setter Property="Height" Value="56" />
+        <Setter Property="FontSize" Value="{StaticResource FontM}" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{StaticResource FocusBorder}" />
+        <Setter Property="FocusVisualSecondaryBrush" Value="Transparent" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="3" />
+        <Setter Property="FocusVisualMargin" Value="0" />
+    </Style>
+
+    <Style TargetType="NavigationViewItemHeader">
+        <Setter Property="Height" Value="48" />
+        <Setter Property="FontSize" Value="{StaticResource FontS}" />
+        <Setter Property="Foreground" Value="{StaticResource TextMuted}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="0,16,0,0" />
+    </Style>
 
     <Style TargetType="GridViewItem">
         <Setter Property="Margin" Value="8" />

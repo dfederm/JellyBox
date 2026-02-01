@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using JellyBox.Services;
 using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
@@ -16,6 +17,10 @@ internal sealed partial class MainPageViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsMenuOpen { get; set; }
 
+    partial void OnIsMenuOpenChanged(bool value) => IsMenuOpenChanged?.Invoke(value);
+
+    public event Action<bool>? IsMenuOpenChanged;
+
     [ObservableProperty]
     public partial ObservableCollection<NavigationViewItemBase>? NavigationItems { get; set; }
 
@@ -31,8 +36,19 @@ internal sealed partial class MainPageViewModel : ObservableObject
         _ = InitializeNavigationItemsAsync();
     }
 
+    [RelayCommand]
+    private void OpenNavigation() => IsMenuOpen = true;
+
+    [RelayCommand]
+    private void CloseNavigation() => IsMenuOpen = false;
+
+    [RelayCommand]
+    private void ToggleNavigation() => IsMenuOpen = !IsMenuOpen;
+
     public void HandleParameters(MainPage.Parameters? parameters, Frame contentFrame)
     {
+        _navigationManager.RegisterContentFrame(contentFrame);
+
         if (parameters is not null)
         {
             parameters.DeferredNavigationAction();
@@ -84,7 +100,7 @@ internal sealed partial class MainPageViewModel : ObservableObject
         navigationItems.Add(new NavigationViewItem
         {
             Content = "Home",
-            Icon = new SymbolIcon(Symbol.Home),
+            Icon = CreateFontIcon(Glyphs.Home),
             Tag = new NavigationViewItemContext(() => _navigationManager.NavigateToHome(), ItemId: NavigationManager.HomeId),
         });
 
@@ -108,7 +124,7 @@ internal sealed partial class MainPageViewModel : ObservableObject
                 navigationItems.Add(new NavigationViewItem
                 {
                     Content = item.Name,
-                    Icon = new SymbolIcon(Symbol.Library), // TODO: Use different icons for different collection types
+                    Icon = CreateFontIcon(Glyphs.Library),
                     Tag = new NavigationViewItemContext(() => _navigationManager.NavigateToItem(item), itemId),
                 });
             }
@@ -119,14 +135,14 @@ internal sealed partial class MainPageViewModel : ObservableObject
         navigationItems.Add(new NavigationViewItem
         {
             Content = "Select Server",
-            Icon = new SymbolIcon(Symbol.Switch),
+            Icon = CreateFontIcon(Glyphs.Switch),
             Tag = new NavigationViewItemContext(() => _navigationManager.NavigateToServerSelection(), ItemId: null),
         });
 
         navigationItems.Add(new NavigationViewItem
         {
             Content = "Sign Out",
-            Icon = new SymbolIcon(Symbol.BlockContact),
+            Icon = CreateFontIcon(Glyphs.SignOut),
             Tag = new NavigationViewItemContext(
                 () =>
                 {
@@ -141,6 +157,13 @@ internal sealed partial class MainPageViewModel : ObservableObject
 
         NavigationItems = new ObservableCollection<NavigationViewItemBase>(navigationItems);
     }
+
+    private static FontIcon CreateFontIcon(string glyph)
+        => new()
+        {
+            Glyph = glyph,
+            FontSize = 24
+        };
 
     internal sealed record NavigationViewItemContext(Action NavigateAction, Guid? ItemId);
 }
