@@ -2,9 +2,9 @@
     x:Class="JellyBox.Views.Movies"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:models="using:Jellyfin.Sdk.Generated.Models"
     xmlns:Interactivity="using:Microsoft.Xaml.Interactivity"
     xmlns:Behaviors="using:JellyBox.Behaviors"
+    xmlns:controls="using:JellyBox.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
@@ -27,11 +27,12 @@
             <GridView
                 ItemsSource="{x:Bind ViewModel.Movies, Mode=OneWay}"
                 ItemTemplate="{StaticResource Card}"
+                ItemContainerStyle="{StaticResource CardGridViewItemStyle}"
                 SelectionMode="None"
                 IsItemClickEnabled="True">
                 <Interactivity:Interaction.Behaviors>
-                  <Behaviors:FocusFirstItemOnLoadBehavior />
-                  <Behaviors:ListViewBaseCommandBehavior />
+                    <Behaviors:FocusFirstItemBehavior />
+                    <Behaviors:ListViewBaseCommandBehavior />
                 </Interactivity:Interaction.Behaviors>
                 <GridView.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -40,5 +41,9 @@
                 </GridView.ItemsPanel>
             </GridView>
         </Grid>
+
+        <controls:LoadingOverlay
+            Grid.RowSpan="2"
+            Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
     </Grid>
 </Page>

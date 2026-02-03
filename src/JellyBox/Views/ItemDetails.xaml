@@ -254,6 +254,7 @@
                                                 IsItemClickEnabled="True"
                                                 ItemsSource="{x:Bind Cards}"
                                                 ItemTemplate="{StaticResource Card}"
+                                                ItemContainerStyle="{StaticResource CardListViewItemStyle}"
                                                 ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                                                 ScrollViewer.HorizontalScrollMode="Enabled"
                                                 ScrollViewer.VerticalScrollMode="Disabled"
@@ -263,7 +264,7 @@
                                                 </Interactivity:Interaction.Behaviors>
                                                 <ListView.ItemsPanel>
                                                     <ItemsPanelTemplate>
-                                                        <StackPanel Orientation="Horizontal" />
+                                                        <StackPanel Orientation="Horizontal" Spacing="8" />
                                                     </ItemsPanelTemplate>
                                                 </ListView.ItemsPanel>
                                             </ListView>

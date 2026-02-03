@@ -8,13 +8,16 @@ using Jellyfin.Sdk.Generated.Models;
 namespace JellyBox.ViewModels;
 
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes. Used via dependency injection.
-internal sealed partial class MoviesViewModel : ObservableObject
+internal sealed partial class MoviesViewModel : ObservableObject, ILoadingViewModel
 #pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly CardFactory _cardFactory;
 
     private Guid? _collectionItemId;
+
+    [ObservableProperty]
+    public partial bool IsLoading { get; set; }
 
     public ObservableCollection<Card> Movies { get; } = new();
 
@@ -40,29 +43,37 @@ internal sealed partial class MoviesViewModel : ObservableObject
             return;
         }
 
-        // TODO: Paginate?
-        BaseItemDtoQueryResult? result = await _jellyfinApiClient.Items.GetAsync(parameters =>
+        IsLoading = true;
+        try
         {
-            parameters.QueryParameters.ParentId = _collectionItemId;
-            parameters.QueryParameters.SortBy = [ItemSortBy.SortName, ItemSortBy.ProductionYear];
-            parameters.QueryParameters.SortOrder = [SortOrder.Ascending];
-            parameters.QueryParameters.IncludeItemTypes = [BaseItemKind.Movie];
-            parameters.QueryParameters.Fields = [ItemFields.PrimaryImageAspectRatio, ItemFields.MediaSourceCount];
-            parameters.QueryParameters.ImageTypeLimit = 1;
-            parameters.QueryParameters.EnableImageTypes = [ImageType.Primary, ImageType.Backdrop, ImageType.Banner, ImageType.Thumb];
-        });
-
-        if (result?.Items is not null)
-        {
-            foreach (BaseItemDto item in result.Items)
+            // TODO: Paginate?
+            BaseItemDtoQueryResult? result = await _jellyfinApiClient.Items.GetAsync(parameters =>
             {
-                if (!item.Id.HasValue)
-                {
-                    continue;
-                }
+                parameters.QueryParameters.ParentId = _collectionItemId;
+                parameters.QueryParameters.SortBy = [ItemSortBy.SortName, ItemSortBy.ProductionYear];
+                parameters.QueryParameters.SortOrder = [SortOrder.Ascending];
+                parameters.QueryParameters.IncludeItemTypes = [BaseItemKind.Movie];
+                parameters.QueryParameters.Fields = [ItemFields.PrimaryImageAspectRatio, ItemFields.MediaSourceCount];
+                parameters.QueryParameters.ImageTypeLimit = 1;
+                parameters.QueryParameters.EnableImageTypes = [ImageType.Primary, ImageType.Backdrop, ImageType.Banner, ImageType.Thumb];
+            });
 
-                Movies.Add(_cardFactory.CreateFromItem(item, CardShape.Portrait, preferredImageType: null));
+            if (result?.Items is not null)
+            {
+                foreach (BaseItemDto item in result.Items)
+                {
+                    if (!item.Id.HasValue)
+                    {
+                        continue;
+                    }
+
+                    Movies.Add(_cardFactory.CreateFromItem(item, CardShape.Portrait, preferredImageType: null));
+                }
             }
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 }

@@ -8,28 +8,39 @@
     xmlns:models="using:JellyBox.Models">
 
     <DataTemplate x:Key="Section" x:DataType="models:Section">
-        <StackPanel Visibility="{x:Bind Cards, Converter={StaticResource EmptyCollectionToVisibilityConverter}}">
+        <StackPanel
+            Visibility="{x:Bind Cards, Converter={StaticResource EmptyCollectionToVisibilityConverter}}"
+            Margin="0,0,0,8">
             <TextBlock
-                Margin="20,10,0,5"
+                Margin="48,0,48,0"
+                Padding="0,0,0,8"
                 HorizontalAlignment="Left"
                 FontSize="{StaticResource FontL}"
+                FontWeight="SemiBold"
                 Foreground="{StaticResource TextPrimary}"
                 Text="{x:Bind Name}" />
             <ListView
-                Margin="8,0,20,10"
+                Padding="48,0,48,0"
                 IsItemClickEnabled="True"
+                IsTabStop="False"
                 ItemsSource="{x:Bind Cards}"
                 ItemTemplate="{StaticResource Card}"
+                ItemContainerStyle="{StaticResource CardListViewItemStyle}"
                 ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                 ScrollViewer.HorizontalScrollMode="Enabled"
                 ScrollViewer.VerticalScrollMode="Disabled"
-                SelectionMode="None">
+                SelectionMode="None"
+                SingleSelectionFollowsFocus="False"
+                TabNavigation="Once"
+                XYFocusKeyboardNavigation="Enabled">
                 <Interactivity:Interaction.Behaviors>
                     <Behaviors:ListViewBaseCommandBehavior />
+                    <Behaviors:HorizontalScrollOnFocusBehavior SafeZoneMargin="52" />
                 </Interactivity:Interaction.Behaviors>
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <StackPanel Orientation="Horizontal" />
+                        <!-- Right margin adds scrollable space so last items can be scrolled into safe zone -->
+                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,48,0" />
                     </ItemsPanelTemplate>
                 </ListView.ItemsPanel>
             </ListView>
@@ -37,18 +48,30 @@
     </DataTemplate>
 
     <DataTemplate x:Key="Card" x:DataType="models:Card">
-        <StackPanel Padding="0,5,0,5">
-            <controls:LazyLoadedImage
-                ImageUri="{x:Bind Image.Uri}"
-                BlurHash="{x:Bind Image.BlurHash}"
-                Width="{x:Bind ImageWidth}"
-                Height="{x:Bind ImageHeight}" />
+        <Grid Padding="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Border
+                CornerRadius="{StaticResource CardCornerRadius}"
+                Background="{StaticResource BackgroundCard}">
+                <controls:LazyLoadedImage
+                    ImageUri="{x:Bind Image.Uri}"
+                    BlurHash="{x:Bind Image.BlurHash}"
+                    Width="{x:Bind ImageWidth}"
+                    Height="{x:Bind ImageHeight}" />
+            </Border>
             <TextBlock
+                Grid.Row="1"
                 Text="{x:Bind Name}"
                 TextAlignment="Center"
+                TextTrimming="CharacterEllipsis"
+                MaxLines="2"
                 Foreground="{StaticResource TextSecondary}"
                 FontSize="{StaticResource FontS}"
-                Padding="0,5,0,0" />
-        </StackPanel>
+                Padding="4,10,4,10"
+                MaxWidth="{x:Bind ImageWidth}" />
+        </Grid>
     </DataTemplate>
 </ResourceDictionary>

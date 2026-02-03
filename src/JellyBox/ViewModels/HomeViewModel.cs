@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using JellyBox.Models;
 using Jellyfin.Sdk;
@@ -7,13 +6,17 @@ using Jellyfin.Sdk.Generated.Models;
 namespace JellyBox.ViewModels;
 
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes. Used via dependency injection.
-internal sealed partial class HomeViewModel : ObservableObject
+internal sealed partial class HomeViewModel : ObservableObject, ILoadingViewModel
 #pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly CardFactory _cardFactory;
 
-    public ObservableCollection<Section> Sections { get; } = new();
+    [ObservableProperty]
+    public partial bool IsLoading { get; set; }
+
+    [ObservableProperty]
+    public partial IReadOnlyList<Section>? Sections { get; set; }
 
     public HomeViewModel(
         JellyfinApiClient jellyfinApiClient,
@@ -25,6 +28,7 @@ internal sealed partial class HomeViewModel : ObservableObject
 
     public async void Initialize()
     {
+        IsLoading = true;
         try
         {
             Task<Section?>[] sectionTasks =
@@ -38,18 +42,26 @@ internal sealed partial class HomeViewModel : ObservableObject
                 // TODO: LatestMedia Sections
             ];
 
-            Section?[] sections = await Task.WhenAll(sectionTasks);
-            foreach (Section? section in sections)
+            Section?[] results = await Task.WhenAll(sectionTasks);
+
+            List<Section> sections = new(results.Length);
+            foreach (Section? section in results)
             {
                 if (section is not null)
                 {
-                    Sections.Add(section);
+                    sections.Add(section);
                 }
             }
+
+            Sections = sections;
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"Error in HomeViewModel.Initialize: {ex}");
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 
