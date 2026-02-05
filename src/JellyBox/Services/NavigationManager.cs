@@ -85,13 +85,13 @@ internal sealed class NavigationManager
                 case BaseItemDto_CollectionType.Movies:
                 {
                     CurrentItem = itemId;
-                    NavigateContentFrame<Movies>(new Movies.Parameters(itemId));
+                    NavigateContentFrame<Library>(new Library.Parameters(itemId, BaseItemKind.Movie, item.Name ?? "Movies"));
                     return;
                 }
                 case BaseItemDto_CollectionType.Tvshows:
                 {
                     CurrentItem = itemId;
-                    NavigateContentFrame<Shows>(new Shows.Parameters(itemId));
+                    NavigateContentFrame<Library>(new Library.Parameters(itemId, BaseItemKind.Series, item.Name ?? "TV Shows"));
                     return;
                 }
             }

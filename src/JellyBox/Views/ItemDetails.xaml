@@ -14,33 +14,18 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Background="{StaticResource BackgroundBase}">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="60" />
-            <RowDefinition />
-        </Grid.RowDefinitions>
-        <Grid Background="{StaticResource BackgroundElevated}">
-            <Image 
-                Source="/Assets/OnBoardingLogo.png" 
-                Stretch="Uniform" 
-                HorizontalAlignment="Left" 
-                Height="28"
-                Margin="28,0,0,0" />
-        </Grid>
-        <Grid
-            Grid.Row="1"
-            Padding="0,40,0,0">
-            <Grid.Background>
-                <ImageBrush
-                    AlignmentX="Center"
-                    AlignmentY="Top"
-                    Opacity="0.14">
-                    <ImageBrush.ImageSource>
-                        <BitmapImage UriSource="{x:Bind ViewModel.BackdropImageUri, Mode=OneWay, FallbackValue=null}" />
-                    </ImageBrush.ImageSource>
-                </ImageBrush>
-            </Grid.Background>
-            <ScrollViewer>
+    <Grid Padding="0,48,0,0">
+        <Grid.Background>
+            <ImageBrush
+                AlignmentX="Center"
+                AlignmentY="Top"
+                Opacity="0.14">
+                <ImageBrush.ImageSource>
+                    <BitmapImage UriSource="{x:Bind ViewModel.BackdropImageUri, Mode=OneWay, FallbackValue=null}" />
+                </ImageBrush.ImageSource>
+            </ImageBrush>
+        </Grid.Background>
+        <ScrollViewer>
                 <Grid>
                     <uc:LazyLoadedImage
                         Grid.Row="1"
@@ -276,6 +261,5 @@
                     </StackPanel>
                 </Grid>
             </ScrollViewer>
-        </Grid>
     </Grid>
 </Page>

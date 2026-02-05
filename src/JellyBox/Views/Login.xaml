@@ -10,76 +10,62 @@
     mc:Ignorable="d"
     Background="{StaticResource BackgroundBase}">
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="60" />
-            <RowDefinition />
-        </Grid.RowDefinitions>
-        <Grid Background="{StaticResource BackgroundElevated}">
-            <Image 
-                Source="/Assets/OnBoardingLogo.png" 
-                Stretch="Uniform" 
-                HorizontalAlignment="Left" 
-                Height="28"
-                Margin="28,0,0,0" />
-        </Grid>
-        <Grid Grid.Row="1" Padding="0,40,0,0">
-            <StackPanel 
-                HorizontalAlignment="Center" 
-                VerticalAlignment="Top" 
-                Width="640">
-                <TextBlock
-                    Text="Please sign in" 
-                    Foreground="White"
-                    FontSize="{StaticResource FontL}"
-                    Margin="0 0 0 28"
-                    HorizontalAlignment="Center" />
-                <TextBox
-                    PlaceholderText="User"
-                    Text="{x:Bind ViewModel.UserName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
-                    Style="{StaticResource PrimaryTextBox}"
-                    Margin="0 0 0 20">
-                    <Interactivity:Interaction.Behaviors>
-                        <Behaviors:FocusOnLoadBehavior />
-                    </Interactivity:Interaction.Behaviors>
-                </TextBox>
-                <PasswordBox
-                    PlaceholderText="Password"
-                    Password="{x:Bind ViewModel.Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
-                    Style="{StaticResource PrimaryPasswordBox}"
-                    Margin="0 0 0 20" />
-                <TextBlock 
-                    Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
-                    Visibility="{x:Bind ViewModel.ShowErrorMessage, Mode=OneWay}"
-                    HorizontalAlignment="Center"
-                    TextAlignment="Center"
-                    TextWrapping="Wrap"
-                    FontSize="{StaticResource FontM}"
-                    Margin="0 8 0 8"
-                    Foreground="#CF4A4A" />
-                <Button 
-                    Content="Sign In"
-                    Command="{x:Bind ViewModel.SignInCommand}"
-                    IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
-                    Style="{StaticResource PrimaryButton}"
-                    Margin="0 0 0 10" />
-                <Button
-                    Content="Use Quick Connect"
-                    Visibility="{x:Bind ViewModel.IsQuickConnectEnabled, Mode=OneWay}"
-                    Command="{x:Bind ViewModel.QuickConnectCommand}"
-                    IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
-                    Style="{StaticResource SecondaryButton}"
-                    Margin="0 0 0 10" />
-                <!-- TODO: "Forgot Password" button -->
-                <Button
-                    Content="Change Server"
-                    Command="{x:Bind ViewModel.ChangeServerCommand}"
-                    IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
-                    Style="{StaticResource SecondaryButton}"
-                    Margin="0 0 0 10" />
-            </StackPanel>
-        </Grid>
+    <Grid Padding="0,48,0,0">
+        <StackPanel 
+            HorizontalAlignment="Center" 
+            VerticalAlignment="Top" 
+            Width="640">
+            <TextBlock
+                Text="Please sign in" 
+                Foreground="White"
+                FontSize="{StaticResource FontL}"
+                Margin="0 0 0 28"
+                HorizontalAlignment="Center" />
+            <TextBox
+                PlaceholderText="User"
+                Text="{x:Bind ViewModel.UserName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
+                Style="{StaticResource PrimaryTextBox}"
+                Margin="0 0 0 20">
+                <Interactivity:Interaction.Behaviors>
+                    <Behaviors:FocusOnLoadBehavior />
+                </Interactivity:Interaction.Behaviors>
+            </TextBox>
+            <PasswordBox
+                PlaceholderText="Password"
+                Password="{x:Bind ViewModel.Password, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
+                Style="{StaticResource PrimaryPasswordBox}"
+                Margin="0 0 0 20" />
+            <TextBlock 
+                Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                Visibility="{x:Bind ViewModel.ShowErrorMessage, Mode=OneWay}"
+                HorizontalAlignment="Center"
+                TextAlignment="Center"
+                TextWrapping="Wrap"
+                FontSize="{StaticResource FontM}"
+                Margin="0 8 0 8"
+                Foreground="#CF4A4A" />
+            <Button 
+                Content="Sign In"
+                Command="{x:Bind ViewModel.SignInCommand}"
+                IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
+                Style="{StaticResource PrimaryButton}"
+                Margin="0 0 0 10" />
+            <Button
+                Content="Use Quick Connect"
+                Visibility="{x:Bind ViewModel.IsQuickConnectEnabled, Mode=OneWay}"
+                Command="{x:Bind ViewModel.QuickConnectCommand}"
+                IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
+                Style="{StaticResource SecondaryButton}"
+                Margin="0 0 0 10" />
+            <!-- TODO: "Forgot Password" button -->
+            <Button
+                Content="Change Server"
+                Command="{x:Bind ViewModel.ChangeServerCommand}"
+                IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
+                Style="{StaticResource SecondaryButton}"
+                Margin="0 0 0 10" />
+        </StackPanel>
     </Grid>
 </Page>
