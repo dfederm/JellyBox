@@ -35,7 +35,7 @@
                 XYFocusKeyboardNavigation="Enabled">
                 <Interactivity:Interaction.Behaviors>
                     <Behaviors:ListViewBaseCommandBehavior />
-                    <Behaviors:HorizontalScrollOnFocusBehavior SafeZoneMargin="52" />
+                    <Behaviors:ScrollOnFocusBehavior SafeZoneMargin="52" />
                 </Interactivity:Interaction.Behaviors>
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
