@@ -14,252 +14,419 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Background="{StaticResource BackgroundBase}">
-    <Grid Padding="0,48,0,0">
+    <Grid XYFocusKeyboardNavigation="Enabled">
+        <!-- Full-screen Backdrop -->
         <Grid.Background>
             <ImageBrush
                 AlignmentX="Center"
                 AlignmentY="Top"
-                Opacity="0.14">
+                Stretch="UniformToFill"
+                Opacity="0.35">
                 <ImageBrush.ImageSource>
                     <BitmapImage UriSource="{x:Bind ViewModel.BackdropImageUri, Mode=OneWay, FallbackValue=null}" />
                 </ImageBrush.ImageSource>
             </ImageBrush>
         </Grid.Background>
-        <ScrollViewer>
-                <Grid>
+        
+        <!-- Gradient overlays for readability -->
+        <Rectangle>
+            <Rectangle.Fill>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#000A0A0A" Offset="0.0" />
+                    <GradientStop Color="#800A0A0A" Offset="0.3" />
+                    <GradientStop Color="#FF0A0A0A" Offset="0.75" />
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+        <Rectangle>
+            <Rectangle.Fill>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                    <GradientStop Color="#CC0A0A0A" Offset="0.0" />
+                    <GradientStop Color="#000A0A0A" Offset="0.6" />
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+        
+        <!-- Top gradient overlay for fade effect -->
+        <Grid Height="80" VerticalAlignment="Top" Canvas.ZIndex="10" IsHitTestVisible="False">
+            <Grid.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#CC0A0A0A" Offset="0.0" />
+                    <GradientStop Color="#000A0A0A" Offset="1.0" />
+                </LinearGradientBrush>
+            </Grid.Background>
+        </Grid>
+        
+        <!-- Main Content -->
+        <ScrollViewer
+            x:Name="ContentScrollViewer"
+            VerticalScrollBarVisibility="Hidden"
+            BringIntoViewOnFocusChange="False"
+            IsTabStop="False">
+            <Grid x:Name="ContentGrid" XYFocusKeyboardNavigation="Enabled" Margin="48,100,48,48">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="380" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                
+                <!-- Poster Image -->
+                <Border Grid.Column="0" Grid.Row="0"
+                        CornerRadius="{StaticResource CardCornerRadius}"
+                        Margin="0,0,40,0"
+                        VerticalAlignment="Top">
                     <uc:LazyLoadedImage
-                        Grid.Row="1"
                         ImageUri="{x:Bind ViewModel.PrimaryImage.Uri, Mode=OneWay}"
                         BlurHash="{x:Bind ViewModel.PrimaryImage.BlurHash, Mode=OneWay}"
-                        Width="300"
-                        Height="450"
-                        VerticalAlignment="Top"
-                        Margin="50,200,50,0"
-                        Canvas.ZIndex="200"
-                        HorizontalAlignment="Left" />
-                    <StackPanel
-                        Grid.Row="1"
-                        Orientation="Vertical"
-                        Canvas.ZIndex="100">
-                        <uc:LazyLoadedImage
-                            ImageUri="{x:Bind ViewModel.LogoImageUri, Mode=OneWay}"
-                            Width="300"
-                            Height="175"
-                            Margin="0,50,400,50"
-                            HorizontalAlignment="Center"
-                            VerticalAlignment="Center" />
-                        <Grid
-                            Background="{StaticResource OverlayBackground}"
-                            Padding="400,0,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel
-                                Grid.Row="0"
-                                Grid.Column="0"
-                                Orientation="Vertical">
+                        Width="340"
+                        Height="510" />
+                </Border>
+                
+                <!-- Content Info -->
+                <StackPanel x:Name="ContentInfoPanel" Grid.Column="1" Grid.Row="0" MaxWidth="800" HorizontalAlignment="Left" XYFocusKeyboardNavigation="Enabled">
+                    
+                    <!-- Logo or Title -->
+                    <Image 
+                        MaxWidth="400"
+                        MaxHeight="120"
+                        HorizontalAlignment="Left"
+                        Margin="0,0,0,16"
+                        Visibility="{x:Bind ViewModel.LogoImageUri, Mode=OneWay, Converter={StaticResource VisibleIfNotNullConverter}}">
+                        <Image.Source>
+                            <BitmapImage UriSource="{x:Bind ViewModel.LogoImageUri, Mode=OneWay}" />
+                        </Image.Source>
+                    </Image>
+                    
+                    <TextBlock
+                        Text="{x:Bind ViewModel.Name, Mode=OneWay}"
+                        FontSize="{StaticResource FontXXL}"
+                        FontWeight="Bold"
+                        Foreground="{StaticResource TextPrimary}"
+                        TextWrapping="Wrap"
+                        MaxLines="2" />
+                    
+                    <!-- Media Info (Year, Rating, Duration) -->
+                    <ListView
+                        ItemsSource="{x:Bind ViewModel.MediaInfo, Mode=OneWay}"
+                        SelectionMode="None"
+                        Margin="0,12,0,0">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="IsTabStop" Value="False"/>
+                                <Setter Property="Padding" Value="0,0,24,0" />
+                                <Setter Property="MinWidth" Value="0" />
+                                <Setter Property="MinHeight" Value="0" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsStackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListView.ItemsPanel>
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="ViewModels:MediaInfoItem">
                                 <TextBlock
-                                    Text="{x:Bind ViewModel.Name, Mode=OneWay}"
-                                    FontWeight="Bold"
-                                    FontSize="36" />
-                                <ListView
-                                    ItemsSource="{x:Bind ViewModel.MediaInfo, Mode=OneWay}"
-                                    SelectionMode="None">
-                                    <ListView.ItemContainerStyle>
-                                        <Style TargetType="ListViewItem">
-                                            <Setter Property="IsTabStop" Value="False"/>
-                                            <Setter Property="Padding" Value="0 0 20 0" />
-                                            <Setter Property="MinWidth" Value="0" />
-                                        </Style>
-                                    </ListView.ItemContainerStyle>
-                                    <ListView.ItemsPanel>
-                                        <ItemsPanelTemplate>
-                                            <ItemsStackPanel Orientation="Horizontal" />
-                                        </ItemsPanelTemplate>
-                                    </ListView.ItemsPanel>
-                                    <ListView.ItemTemplate>
-                                        <DataTemplate x:DataType="ViewModels:MediaInfoItem">
-                                            <TextBlock
-                                                Text="{x:Bind Text}" />
-                                        </DataTemplate>
-                                    </ListView.ItemTemplate>
-                                </ListView>
+                                    Text="{x:Bind Text}"
+                                    FontSize="{StaticResource FontM}"
+                                    Foreground="{StaticResource TextMuted}" />
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    
+                    <!-- Tagline -->
+                    <TextBlock
+                        Text="{x:Bind ViewModel.TagLine, Mode=OneWay}"
+                        FontSize="{StaticResource FontL}"
+                        FontStyle="Italic"
+                        Foreground="{StaticResource TextSecondary}"
+                        TextWrapping="Wrap"
+                        Margin="0,20,0,0"
+                        Visibility="{x:Bind ViewModel.TagLine, Mode=OneWay, Converter={StaticResource VisibleIfNotNullConverter}}" />
+                    
+                    <!-- Overview -->
+                    <TextBlock
+                        Text="{x:Bind ViewModel.Overview, Mode=OneWay}"
+                        FontSize="{StaticResource FontS}"
+                        Foreground="{StaticResource TextSecondary}"
+                        TextWrapping="Wrap"
+                        MaxLines="4"
+                        Margin="0,16,0,0" />
+                    
+                    <!-- Action Buttons -->
+                    <StackPanel 
+                        Orientation="Horizontal" 
+                        Margin="0,32,0,0"
+                        Spacing="16"
+                        XYFocusKeyboardNavigation="Enabled">
+                        <Button
+                            x:Name="PlayButton"
+                            Style="{StaticResource PrimaryButton}"
+                            Click="{x:Bind ViewModel.Play}"
+                            Visibility="{x:Bind ViewModel.CanPlay, Mode=OneWay}"
+                            XYFocusLeft="{x:Bind PlayButton}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <FontIcon Glyph="&#xE768;" FontSize="20" />
+                                <TextBlock Text="Play" />
                             </StackPanel>
-                            <StackPanel
-                                Grid.Row="0"
-                                Grid.Column="1"
-                                Orientation="Horizontal"
-                                Spacing="12">
-                                <Button 
-                                    Style="{StaticResource IconButton}"
-                                    Click="{x:Bind ViewModel.Play}"
-                                    Visibility="{x:Bind ViewModel.CanPlay, Mode=OneWay}">
-                                    <Interactivity:Interaction.Behaviors>
-                                        <Behaviors:FocusOnLoadBehavior />
-                                    </Interactivity:Interaction.Behaviors>
-                                    <FontIcon Glyph="{x:Bind g:Glyphs.Play}" />
-                                </Button>
-                                <Button
-                                    Style="{StaticResource IconButton}"
-                                    Click="{x:Bind ViewModel.PlayTrailer}"
-                                    Visibility="{x:Bind ViewModel.HasTrailer, Mode=OneWay}">
-                                    <FontIcon Glyph="{x:Bind g:Glyphs.Movies}" />
-                                </Button>
-                                <Button
-                                    Style="{StaticResource IconButton}"
-                                    Click="{x:Bind ViewModel.TogglePlayed}"
-                                    Visibility="{x:Bind ViewModel.CanMarkPlayed, Mode=OneWay}">
-                                    <FontIcon
-                                        Glyph="{x:Bind g:Glyphs.Accept}"
-                                        Foreground="{x:Bind ViewModel.IsPlayed, Mode=OneWay, Converter={StaticResource BoolToBrushConverter}}" />
-                                </Button>
-                                <Button
-                                    Style="{StaticResource IconButton}"
-                                    Click="{x:Bind ViewModel.ToggleFavorite}"
-                                    Visibility="{x:Bind ViewModel.CanMarkFavorite, Mode=OneWay}">
-                                    <FontIcon
-                                        Glyph="{x:Bind g:Glyphs.HeartFilled}"
-                                        Foreground="{x:Bind ViewModel.IsFavorite, Mode=OneWay, Converter={StaticResource BoolToBrushConverter}}" />
-                                </Button>
-                                <!-- TODO: More commands -->
-                                <Button Style="{StaticResource IconButton}">
-                                    <FontIcon Glyph="{x:Bind g:Glyphs.More}" />
-                                </Button>
+                        </Button>
+                        <Button
+                            x:Name="TrailerButton"
+                            Style="{StaticResource SecondaryButton}"
+                            Click="{x:Bind ViewModel.PlayTrailer}"
+                            Visibility="{x:Bind ViewModel.HasTrailer, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <FontIcon Glyph="&#xE714;" FontSize="20" />
+                                <TextBlock Text="Trailer" />
                             </StackPanel>
-                        </Grid>
-                        <StackPanel
-                            Orientation="Vertical"
-                            Background="{StaticResource BackgroundElevated}"
-                            Padding="400,20,0,0">
-                            <Grid
-                                Visibility="{x:Bind ViewModel.SourceContainers, Mode=OneWay, Converter={StaticResource VisibleIfNotNullConverter}}">
+                        </Button>
+                        <Button
+                            x:Name="PlayedButton"
+                            Style="{StaticResource IconButton}"
+                            Click="{x:Bind ViewModel.TogglePlayed}"
+                            Visibility="{x:Bind ViewModel.CanMarkPlayed, Mode=OneWay}">
+                            <FontIcon
+                                Glyph="{x:Bind g:Glyphs.Accept}"
+                                FontFamily="{StaticResource SegoeIcons}"
+                                Foreground="{x:Bind ViewModel.IsPlayed, Mode=OneWay, Converter={StaticResource BoolToBrushConverter}}" />
+                        </Button>
+                        <Button
+                            x:Name="FavoriteButton"
+                            Style="{StaticResource IconButton}"
+                            Click="{x:Bind ViewModel.ToggleFavorite}"
+                            Visibility="{x:Bind ViewModel.CanMarkFavorite, Mode=OneWay}"
+                            XYFocusRight="{x:Bind FavoriteButton}">
+                            <FontIcon
+                                Glyph="{x:Bind g:Glyphs.HeartFilled}"
+                                FontFamily="{StaticResource SegoeIcons}"
+                                Foreground="{x:Bind ViewModel.IsFavorite, Mode=OneWay, Converter={StaticResource BoolToBrushConverter}}" />
+                        </Button>
+                    </StackPanel>
+                    
+                    <!-- Stream Selection (if applicable) -->
+                    <StackPanel
+                        Margin="0,32,0,0"
+                        Spacing="12"
+                        XYFocusKeyboardNavigation="Enabled"
+                        Visibility="{x:Bind ViewModel.SourceContainers, Mode=OneWay, Converter={StaticResource VisibleIfNotNullConverter}}">
+                        
+                        <!-- Version Selection - Button when multiple, Text when single -->
+                        <Button
+                            x:Name="VersionButton"
+                            Style="{StaticResource SecondaryButton}"
+                            MinWidth="320"
+                            HorizontalAlignment="Left"
+                            HorizontalContentAlignment="Left"
+                            XYFocusLeft="{x:Bind VersionButton}"
+                            XYFocusRight="{x:Bind VersionButton}"
+                            Visibility="{x:Bind ViewModel.HasMultipleSources, Mode=OneWay}">
+                            <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="100" />
-                                    <ColumnDefinition Width="550" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*" />
-                                    <RowDefinition Height="*" />
-                                    <RowDefinition Height="*" />
-                                    <RowDefinition Height="*" />
-                                </Grid.RowDefinitions>
                                 <TextBlock
                                     Text="Version"
-                                    Grid.Row="0"
-                                    Grid.Column="0" />
-                                <ComboBox
-                                    ItemsSource="{x:Bind ViewModel.SourceContainers, Mode=OneWay}"
-                                    SelectedItem="{x:Bind ViewModel.SelectedSourceContainer, Mode=TwoWay}"
-                                    Grid.Row="0"
-                                    Grid.Column="1"
-                                    Width="550">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="ViewModels:MediaSourceInfoWrapper">
-                                            <TextBlock Text="{x:Bind Value.Name}" />
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
+                                    Foreground="{StaticResource TextMuted}"
+                                    VerticalAlignment="Center" />
                                 <TextBlock
-                                    Text="Video"
-                                    Grid.Row="1"
-                                    Grid.Column="0" />
-                                <ComboBox
-                                    ItemsSource="{x:Bind ViewModel.VideoStreams, Mode=OneWay}"
-                                    SelectedItem="{x:Bind ViewModel.SelectedVideoStream, Mode=TwoWay}"
-                                    Grid.Row="1"
                                     Grid.Column="1"
-                                    Width="550">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="ViewModels:MediaStreamOption">
-                                            <TextBlock Text="{x:Bind DisplayText }" />
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
+                                    Text="{x:Bind ViewModel.SelectedSourceContainer.Value.Name, Mode=OneWay}"
+                                    VerticalAlignment="Center" />
+                                <FontIcon
+                                    Grid.Column="2"
+                                    Glyph="&#xE70D;"
+                                    FontSize="12"
+                                    Foreground="{StaticResource TextMuted}" />
+                            </Grid>
+                            <Button.Flyout>
+                                <MenuFlyout
+                                    x:Name="VersionFlyout"
+                                    Placement="BottomEdgeAlignedLeft">
+                                    <MenuFlyout.MenuFlyoutPresenterStyle>
+                                        <Style TargetType="MenuFlyoutPresenter">
+                                            <Setter Property="Background" Value="{StaticResource BackgroundCard}" />
+                                            <Setter Property="BorderBrush" Value="{StaticResource BorderDefault}" />
+                                        </Style>
+                                    </MenuFlyout.MenuFlyoutPresenterStyle>
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Grid
+                            MinWidth="320"
+                            Visibility="{x:Bind ViewModel.HasSingleSource, Mode=OneWay}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                Text="Version"
+                                Foreground="{StaticResource TextMuted}"
+                                VerticalAlignment="Center"
+                                FontSize="{StaticResource FontS}" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Text="{x:Bind ViewModel.SelectedSourceContainer.Value.Name, Mode=OneWay}"
+                                Foreground="{StaticResource TextPrimary}"
+                                FontSize="{StaticResource FontS}" />
+                        </Grid>
+                        
+                        <!-- Audio Selection - Button when multiple, Text when single -->
+                        <Button
+                            x:Name="AudioButton"
+                            Style="{StaticResource SecondaryButton}"
+                            MinWidth="320"
+                            HorizontalAlignment="Left"
+                            HorizontalContentAlignment="Left"
+                            XYFocusLeft="{x:Bind AudioButton}"
+                            XYFocusRight="{x:Bind AudioButton}"
+                            Visibility="{x:Bind ViewModel.HasMultipleAudioStreams, Mode=OneWay}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="100" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
                                 <TextBlock
                                     Text="Audio"
-                                    Grid.Row="2"
-                                    Grid.Column="0" />
-                                <ComboBox
-                                    ItemsSource="{x:Bind ViewModel.AudioStreams, Mode=OneWay}"
-                                    SelectedItem="{x:Bind ViewModel.SelectedAudioStream, Mode=TwoWay}"
-                                    Grid.Row="2"
+                                    Foreground="{StaticResource TextMuted}"
+                                    VerticalAlignment="Center" />
+                                <TextBlock
                                     Grid.Column="1"
-                                    Width="550">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="ViewModels:MediaStreamOption">
-                                            <TextBlock Text="{x:Bind DisplayText }" />
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
+                                    Text="{x:Bind ViewModel.SelectedAudioStream.DisplayText, Mode=OneWay}"
+                                    VerticalAlignment="Center" />
+                                <FontIcon
+                                    Grid.Column="2"
+                                    Glyph="&#xE70D;"
+                                    FontSize="12"
+                                    Foreground="{StaticResource TextMuted}" />
+                            </Grid>
+                            <Button.Flyout>
+                                <MenuFlyout
+                                    x:Name="AudioFlyout"
+                                    Placement="BottomEdgeAlignedLeft">
+                                    <MenuFlyout.MenuFlyoutPresenterStyle>
+                                        <Style TargetType="MenuFlyoutPresenter">
+                                            <Setter Property="Background" Value="{StaticResource BackgroundCard}" />
+                                            <Setter Property="BorderBrush" Value="{StaticResource BorderDefault}" />
+                                        </Style>
+                                    </MenuFlyout.MenuFlyoutPresenterStyle>
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Grid
+                            MinWidth="320"
+                            Visibility="{x:Bind ViewModel.HasSingleAudioStream, Mode=OneWay}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                Text="Audio"
+                                Foreground="{StaticResource TextMuted}"
+                                VerticalAlignment="Center"
+                                FontSize="{StaticResource FontS}" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Text="{x:Bind ViewModel.SelectedAudioStream.DisplayText, Mode=OneWay}"
+                                Foreground="{StaticResource TextPrimary}"
+                                FontSize="{StaticResource FontS}" />
+                        </Grid>
+                        
+                        <!-- Subtitle Selection - Button when multiple, Text when single -->
+                        <Button
+                            x:Name="SubtitleButton"
+                            Style="{StaticResource SecondaryButton}"
+                            MinWidth="320"
+                            HorizontalAlignment="Left"
+                            HorizontalContentAlignment="Left"
+                            XYFocusLeft="{x:Bind SubtitleButton}"
+                            XYFocusRight="{x:Bind SubtitleButton}"
+                            Visibility="{x:Bind ViewModel.HasMultipleSubtitleStreams, Mode=OneWay}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="100" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
                                 <TextBlock
                                     Text="Subtitles"
-                                    Grid.Row="3"
-                                    Grid.Column="0" />
-                                <ComboBox
-                                    ItemsSource="{x:Bind ViewModel.SubtitleStreams, Mode=OneWay}"
-                                    SelectedItem="{x:Bind ViewModel.SelectedSubtitleStream, Mode=TwoWay}"
-                                    Grid.Row="3"
+                                    Foreground="{StaticResource TextMuted}"
+                                    VerticalAlignment="Center" />
+                                <TextBlock
                                     Grid.Column="1"
-                                    Width="550">
-                                    <ComboBox.ItemTemplate>
-                                        <DataTemplate x:DataType="ViewModels:MediaStreamOption">
-                                            <TextBlock Text="{x:Bind DisplayText }" />
-                                        </DataTemplate>
-                                    </ComboBox.ItemTemplate>
-                                </ComboBox>
+                                    Text="{x:Bind ViewModel.SelectedSubtitleStream.DisplayText, Mode=OneWay}"
+                                    VerticalAlignment="Center" />
+                                <FontIcon
+                                    Grid.Column="2"
+                                    Glyph="&#xE70D;"
+                                    FontSize="12"
+                                    Foreground="{StaticResource TextMuted}" />
                             </Grid>
+                            <Button.Flyout>
+                                <MenuFlyout
+                                    x:Name="SubtitleFlyout"
+                                    Placement="BottomEdgeAlignedLeft">
+                                    <MenuFlyout.MenuFlyoutPresenterStyle>
+                                        <Style TargetType="MenuFlyoutPresenter">
+                                            <Setter Property="Background" Value="{StaticResource BackgroundCard}" />
+                                            <Setter Property="BorderBrush" Value="{StaticResource BorderDefault}" />
+                                        </Style>
+                                    </MenuFlyout.MenuFlyoutPresenterStyle>
+                                </MenuFlyout>
+                            </Button.Flyout>
+                        </Button>
+                        <Grid
+                            MinWidth="320"
+                            Visibility="{x:Bind ViewModel.HasSingleSubtitleStream, Mode=OneWay}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
                             <TextBlock
-                                Text="{x:Bind ViewModel.TagLine, Mode=OneWay}"
-                                TextWrapping="WrapWholeWords"
-                                FontSize="{StaticResource FontL}"
-                                Margin="0 20 0 20" />
+                                Text="Subtitles"
+                                Foreground="{StaticResource TextMuted}"
+                                VerticalAlignment="Center"
+                                FontSize="{StaticResource FontS}" />
                             <TextBlock
-                                Text="{x:Bind ViewModel.Overview, Mode=OneWay}"
-                                TextWrapping="WrapWholeWords"
-                                Margin="0 10 0 0" />
-                            <!-- TODO: Make into links? -->
-                            <TextBlock
-                                Text="{x:Bind ViewModel.Tags, Mode=OneWay}"
-                                TextWrapping="WrapWholeWords"
-                                Margin="0 25 0 0"/>
-
-                            <ItemsControl ItemsSource="{x:Bind ViewModel.Sections, Mode=OneWay}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="m:Section">
-                                        <StackPanel Visibility="{x:Bind Cards, Converter={StaticResource EmptyCollectionToVisibilityConverter}}">
-                                            <TextBlock
-                                                Margin="20,10,0,5"
-                                                HorizontalAlignment="Left"
-                                                FontSize="{StaticResource FontL}"
-                                                Foreground="White"
-                                                Text="{x:Bind Name}" />
-                                            <ListView
-                                                Margin="8,0,20,10"
-                                                IsItemClickEnabled="True"
-                                                ItemsSource="{x:Bind Cards}"
-                                                ItemTemplate="{StaticResource Card}"
-                                                ItemContainerStyle="{StaticResource CardListViewItemStyle}"
-                                                ScrollViewer.HorizontalScrollBarVisibility="Hidden"
-                                                ScrollViewer.HorizontalScrollMode="Enabled"
-                                                ScrollViewer.VerticalScrollMode="Disabled"
-                                                SelectionMode="None">
-                                                <Interactivity:Interaction.Behaviors>
-                                                    <Behaviors:ListViewBaseCommandBehavior />
-                                                </Interactivity:Interaction.Behaviors>
-                                                <ListView.ItemsPanel>
-                                                    <ItemsPanelTemplate>
-                                                        <StackPanel Orientation="Horizontal" Spacing="8" />
-                                                    </ItemsPanelTemplate>
-                                                </ListView.ItemsPanel>
-                                            </ListView>
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
+                                Grid.Column="1"
+                                Text="{x:Bind ViewModel.SelectedSubtitleStream.DisplayText, Mode=OneWay}"
+                                Foreground="{StaticResource TextPrimary}"
+                                FontSize="{StaticResource FontS}" />
+                        </Grid>
                     </StackPanel>
-                </Grid>
-            </ScrollViewer>
+                    
+                    <!-- Tags -->
+                    <TextBlock
+                        Text="{x:Bind ViewModel.Tags, Mode=OneWay}"
+                        FontSize="{StaticResource FontXS}"
+                        Foreground="{StaticResource TextMuted}"
+                        TextWrapping="Wrap"
+                        Margin="0,24,0,0"
+                        Visibility="{x:Bind ViewModel.Tags, Mode=OneWay, Converter={StaticResource VisibleIfNotNullConverter}}" />
+                </StackPanel>
+                
+                <!-- Related Content Sections -->
+                <StackPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" Margin="-48,40,-48,0" XYFocusKeyboardNavigation="Enabled">
+                    <ItemsControl
+                        x:Name="SectionsControl"
+                        ItemsSource="{x:Bind ViewModel.Sections, Mode=OneWay}"
+                        ItemTemplate="{StaticResource Section}"
+                        XYFocusKeyboardNavigation="Enabled">
+                        <Interactivity:Interaction.Behaviors>
+                            <Behaviors:SectionNavigationBehavior
+                                ScrollViewer="{x:Bind ContentScrollViewer}"
+                                TrapAtTop="False"
+                                TrapAtBottom="True" />
+                        </Interactivity:Interaction.Behaviors>
+                    </ItemsControl>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
     </Grid>
 </Page>
+
+

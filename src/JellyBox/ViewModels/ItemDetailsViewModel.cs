@@ -53,6 +53,12 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
     public partial MediaSourceInfoWrapper? SelectedSourceContainer { get; set; }
 
     [ObservableProperty]
+    public partial bool HasMultipleSources { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasSingleSource { get; set; }
+
+    [ObservableProperty]
     public partial ObservableCollection<MediaStreamOption>? VideoStreams { get; set; }
 
     [ObservableProperty]
@@ -65,10 +71,22 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
     public partial MediaStreamOption? SelectedAudioStream { get; set; }
 
     [ObservableProperty]
+    public partial bool HasMultipleAudioStreams { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasSingleAudioStream { get; set; }
+
+    [ObservableProperty]
     public partial ObservableCollection<MediaStreamOption>? SubtitleStreams { get; set; }
 
     [ObservableProperty]
     public partial MediaStreamOption? SelectedSubtitleStream { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasMultipleSubtitleStreams { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasSingleSubtitleStream { get; set; }
 
     [ObservableProperty]
     public partial string? TagLine { get; set; }
@@ -169,6 +187,8 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             if (Item.MediaSources is not null && Item.MediaSources.Count > 0)
             {
                 SourceContainers = new ObservableCollection<MediaSourceInfoWrapper>(Item.MediaSources.Select(s => new MediaSourceInfoWrapper(s.Name!, s)));
+                HasMultipleSources = SourceContainers.Count > 1;
+                HasSingleSource = SourceContainers.Count == 1;
 
                 // This will trigger OnSelectedSourceContainerChanged, which populates the video, audio, and subtitle drop-downs.
                 SelectedSourceContainer = SourceContainers[0];
@@ -280,6 +300,8 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         }
 
         AudioStreams = new ObservableCollection<MediaStreamOption>(options);
+        HasMultipleAudioStreams = AudioStreams.Count > 1;
+        HasSingleAudioStream = AudioStreams.Count == 1;
         SelectedAudioStream = selectedOption;
     }
 
@@ -318,6 +340,8 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         }
 
         SubtitleStreams = new ObservableCollection<MediaStreamOption>(options);
+        HasMultipleSubtitleStreams = SubtitleStreams.Count > 1;
+        HasSingleSubtitleStream = SubtitleStreams.Count == 1;
         SelectedSubtitleStream = selectedOption;
     }
 

@@ -4,6 +4,8 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:Interactivity="using:Microsoft.Xaml.Interactivity"
+    xmlns:Behaviors="using:JellyBox.Behaviors"
     xmlns:controls="using:JellyBox.Controls"
     mc:Ignorable="d"
     Background="{StaticResource BackgroundBase}">
@@ -12,15 +14,19 @@
         <ScrollViewer
             x:Name="ContentScrollViewer"
             VerticalScrollBarVisibility="Hidden"
-            VerticalScrollMode="Disabled"
             HorizontalScrollMode="Disabled">
             <ItemsControl
                 x:Name="SectionsControl"
                 ItemsSource="{x:Bind ViewModel.Sections, Mode=OneWay}"
                 ItemTemplate="{StaticResource Section}"
                 Margin="0,48,0,48"
-                XYFocusKeyboardNavigation="Enabled"
-                GotFocus="SectionsControl_GotFocus">
+                XYFocusKeyboardNavigation="Enabled">
+                <Interactivity:Interaction.Behaviors>
+                    <Behaviors:SectionNavigationBehavior
+                        ScrollViewer="{x:Bind ContentScrollViewer}"
+                        TrapAtTop="True"
+                        TrapAtBottom="True" />
+                </Interactivity:Interaction.Behaviors>
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <StackPanel />

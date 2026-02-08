@@ -1,4 +1,4 @@
-<ResourceDictionary
+﻿<ResourceDictionary
     x:Class="JellyBox.Resources.Styles"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -277,13 +277,13 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Grid x:Name="RootGrid" Background="Transparent">
+                    <Grid x:Name="RootGrid" Background="Transparent" RenderTransformOrigin="0.5,0.5">
                         <Grid.RenderTransform>
                             <CompositeTransform x:Name="ButtonTransform" ScaleX="1" ScaleY="1" />
                         </Grid.RenderTransform>
                         <Border
-                            x:Name="BackgroundBorder"
-                            Background="{StaticResource SurfaceSecondary}"
+                            x:Name="BackgroundBorder" 
+                            Background="{StaticResource SurfaceSecondary}" 
                             CornerRadius="28"
                             BorderThickness="3"
                             BorderBrush="Transparent" />
@@ -349,11 +349,6 @@
 
                                 <VisualState x:Name="Pressed">
                                     <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames
-                                            Storyboard.TargetName="BackgroundBorder"
-                                            Storyboard.TargetProperty="Background">
-                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource SurfaceSecondaryHover}" />
-                                        </ObjectAnimationUsingKeyFrames>
                                         <DoubleAnimation
                                             Storyboard.TargetName="ButtonTransform"
                                             Storyboard.TargetProperty="ScaleX"
@@ -402,8 +397,8 @@
                                         <DoubleAnimation
                                             Storyboard.TargetName="ButtonTransform"
                                             Storyboard.TargetProperty="ScaleX"
-                                            To="1.1"
-                                            Duration="0:0:0.15">
+                                            To="1.15"
+                                            Duration="0:0:0.2">
                                             <DoubleAnimation.EasingFunction>
                                                 <QuadraticEase EasingMode="EaseOut" />
                                             </DoubleAnimation.EasingFunction>
@@ -411,8 +406,8 @@
                                         <DoubleAnimation
                                             Storyboard.TargetName="ButtonTransform"
                                             Storyboard.TargetProperty="ScaleY"
-                                            To="1.1"
-                                            Duration="0:0:0.15">
+                                            To="1.15"
+                                            Duration="0:0:0.2">
                                             <DoubleAnimation.EasingFunction>
                                                 <QuadraticEase EasingMode="EaseOut" />
                                             </DoubleAnimation.EasingFunction>
@@ -430,56 +425,109 @@
     </Style>
 
     <Style x:Key="PrimaryButton" TargetType="Button">
-        <Setter Property="Background" Value="{ThemeResource ButtonBackground}" />
+        <Setter Property="Background" Value="{StaticResource AccentColor}" />
         <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource ButtonBorderBrush}" />
-        <Setter Property="BorderThickness" Value="{ThemeResource ButtonBorderThemeThickness}" />
-        <Setter Property="Padding" Value="8,4,8,4" />
-        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="24,12,24,12" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="FontFamily" Value="{StaticResource ContentControlThemeFontFamily}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="FontSize" Value="{StaticResource FontM}" />
-        <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualMargin" Value="-3" />
-        <Setter Property="Height" Value="40" />
+        <Setter Property="UseSystemFocusVisuals" Value="False" />
+        <Setter Property="MinHeight" Value="52" />
+        <Setter Property="MinWidth" Value="120" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="RootGrid" Background="{StaticResource AccentColor}" CornerRadius="4">
+                    <Grid x:Name="RootGrid" Background="Transparent" RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <CompositeTransform x:Name="ButtonTransform" ScaleX="1" ScaleY="1" />
+                        </Grid.RenderTransform>
+                        <Border x:Name="BackgroundBorder" 
+                                Background="{StaticResource AccentColor}"
+                                CornerRadius="8"
+                                BorderThickness="3"
+                                BorderBrush="Transparent" />
+                        <ContentPresenter x:Name="ContentPresenter"
+                            Content="{TemplateBinding Content}"
+                            ContentTransitions="{TemplateBinding ContentTransitions}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            AutomationProperties.AccessibilityView="Raw" />
 
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal">
-
                                     <Storyboard>
-                                        <PointerUpThemeAnimation Storyboard.TargetName="RootGrid" />
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ButtonTransform"
+                                            Storyboard.TargetProperty="ScaleX"
+                                            To="1"
+                                            Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation
+                                            Storyboard.TargetName="ButtonTransform"
+                                            Storyboard.TargetProperty="ScaleY"
+                                            To="1"
+                                            Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorder" Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame
+                                                KeyTime="0"
+                                                Value="Transparent" />
+                                        </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
 
                                 <VisualState x:Name="PointerOver">
-
                                     <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorder" Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource AccentColorHover}" />
                                         </ObjectAnimationUsingKeyFrames>
-                                        <PointerUpThemeAnimation Storyboard.TargetName="RootGrid" />
+                                        <DoubleAnimation Storyboard.TargetName="ButtonTransform" Storyboard.TargetProperty="ScaleX" To="1.05" Duration="0:0:0.15">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="ButtonTransform" Storyboard.TargetProperty="ScaleY" To="1.05" Duration="0:0:0.15">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
                                     </Storyboard>
                                 </VisualState>
 
                                 <VisualState x:Name="Pressed">
-
                                     <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorder" Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource AccentColorHover}" />
                                         </ObjectAnimationUsingKeyFrames>
-                                        <PointerDownThemeAnimation Storyboard.TargetName="RootGrid" />
+                                        <DoubleAnimation Storyboard.TargetName="ButtonTransform" Storyboard.TargetProperty="ScaleX" To="0.97" Duration="0:0:0.1">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="ButtonTransform" Storyboard.TargetProperty="ScaleY" To="0.97" Duration="0:0:0.1">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
                                     </Storyboard>
                                 </VisualState>
 
                                 <VisualState x:Name="Disabled">
-
                                     <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorder" Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource BorderSubtle}" />
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter" Storyboard.TargetProperty="Foreground">
@@ -489,75 +537,116 @@
                                 </VisualState>
                             </VisualStateGroup>
 
+                            <VisualStateGroup x:Name="FocusStates">
+                                <VisualState x:Name="Focused">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorder" Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource FocusBorder}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <DoubleAnimation Storyboard.TargetName="ButtonTransform" Storyboard.TargetProperty="ScaleX" To="1.08" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="ButtonTransform" Storyboard.TargetProperty="ScaleY" To="1.08" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction>
+                                                <QuadraticEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Unfocused" />
+                                <VisualState x:Name="PointerFocused" />
+                            </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
-                        <ContentPresenter x:Name="ContentPresenter"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            Content="{TemplateBinding Content}"
-                            ContentTransitions="{TemplateBinding ContentTransitions}"
-                            ContentTemplate="{TemplateBinding ContentTemplate}"
-                            Padding="{TemplateBinding Padding}"
-                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
-                            AutomationProperties.AccessibilityView="Raw" />
-                    </Border>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
     </Style>
 
     <Style x:Key="SecondaryButton" TargetType="Button">
-        <Setter Property="Background" Value="{ThemeResource ButtonBackground}" />
+        <Setter Property="Background" Value="{StaticResource SurfaceSecondary}" />
         <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
-        <Setter Property="BorderBrush" Value="{ThemeResource ButtonBorderBrush}" />
-        <Setter Property="BorderThickness" Value="{ThemeResource ButtonBorderThemeThickness}" />
-        <Setter Property="Padding" Value="8,4,8,4" />
-        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="24,12,24,12" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="FontFamily" Value="{StaticResource ContentControlThemeFontFamily}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="FontSize" Value="{StaticResource FontM}" />
-        <Setter Property="UseSystemFocusVisuals" Value="True" />
-        <Setter Property="FocusVisualMargin" Value="-3" />
-        <Setter Property="Height" Value="40" />
+        <Setter Property="UseSystemFocusVisuals" Value="False" />
+        <Setter Property="MinHeight" Value="52" />
+        <Setter Property="MinWidth" Value="120" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="RootGrid" Background="{StaticResource SurfaceSecondary}" CornerRadius="4">
+                    <Grid x:Name="RootGrid" Background="Transparent" RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <CompositeTransform x:Name="ButtonTransform" ScaleX="1" ScaleY="1" />
+                        </Grid.RenderTransform>
+                        <Border x:Name="BackgroundBorder" 
+                                Background="{StaticResource SurfaceSecondary}" 
+                                CornerRadius="8"
+                                BorderThickness="3"
+                                BorderBrush="Transparent" />
+                        <ContentPresenter x:Name="ContentPresenter"
+                            Content="{TemplateBinding Content}"
+                            ContentTransitions="{TemplateBinding ContentTransitions}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Padding="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="Center"
+                            VerticalContentAlignment="Center"
+                            AutomationProperties.AccessibilityView="Raw" />
 
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal">
-
                                     <Storyboard>
-                                        <PointerUpThemeAnimation Storyboard.TargetName="RootGrid" />
+                                        <DoubleAnimation Storyboard.TargetName="ButtonTransform" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="ButtonTransform" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorder" Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="Transparent" />
+                                        </ObjectAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
 
                                 <VisualState x:Name="PointerOver">
-
                                     <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorder" Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource SurfaceSecondaryHover}" />
                                         </ObjectAnimationUsingKeyFrames>
-                                        <PointerUpThemeAnimation Storyboard.TargetName="RootGrid" />
+                                        <DoubleAnimation Storyboard.TargetName="ButtonTransform" Storyboard.TargetProperty="ScaleX" To="1.05" Duration="0:0:0.15">
+                                            <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="ButtonTransform" Storyboard.TargetProperty="ScaleY" To="1.05" Duration="0:0:0.15">
+                                            <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
                                     </Storyboard>
                                 </VisualState>
 
                                 <VisualState x:Name="Pressed">
-
                                     <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorder" Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource SurfaceSecondaryHover}" />
                                         </ObjectAnimationUsingKeyFrames>
-                                        <PointerDownThemeAnimation Storyboard.TargetName="RootGrid" />
+                                        <DoubleAnimation Storyboard.TargetName="ButtonTransform" Storyboard.TargetProperty="ScaleX" To="0.97" Duration="0:0:0.1">
+                                            <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="ButtonTransform" Storyboard.TargetProperty="ScaleY" To="0.97" Duration="0:0:0.1">
+                                            <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
                                     </Storyboard>
                                 </VisualState>
 
                                 <VisualState x:Name="Disabled">
-
                                     <Storyboard>
-                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="RootGrid" Storyboard.TargetProperty="Background">
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorder" Storyboard.TargetProperty="Background">
                                             <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource BorderSubtle}" />
                                         </ObjectAnimationUsingKeyFrames>
                                         <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentPresenter" Storyboard.TargetProperty="Foreground">
@@ -567,18 +656,25 @@
                                 </VisualState>
                             </VisualStateGroup>
 
+                            <VisualStateGroup x:Name="FocusStates">
+                                <VisualState x:Name="Focused">
+                                    <Storyboard>
+                                        <ObjectAnimationUsingKeyFrames Storyboard.TargetName="BackgroundBorder" Storyboard.TargetProperty="BorderBrush">
+                                            <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource FocusBorder}" />
+                                        </ObjectAnimationUsingKeyFrames>
+                                        <DoubleAnimation Storyboard.TargetName="ButtonTransform" Storyboard.TargetProperty="ScaleX" To="1.08" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="ButtonTransform" Storyboard.TargetProperty="ScaleY" To="1.08" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction><QuadraticEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </VisualState>
+                                <VisualState x:Name="Unfocused" />
+                                <VisualState x:Name="PointerFocused" />
+                            </VisualStateGroup>
                         </VisualStateManager.VisualStateGroups>
-                        <ContentPresenter x:Name="ContentPresenter"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            Content="{TemplateBinding Content}"
-                            ContentTransitions="{TemplateBinding ContentTransitions}"
-                            ContentTemplate="{TemplateBinding ContentTemplate}"
-                            Padding="{TemplateBinding Padding}"
-                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
-                            AutomationProperties.AccessibilityView="Raw" />
-                    </Border>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -1408,3 +1504,4 @@
     </Style>
 
 </ResourceDictionary>
+
