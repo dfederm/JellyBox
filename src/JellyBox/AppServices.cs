@@ -53,11 +53,11 @@ internal sealed class AppServices
         // Add Jellyfin SDK services.
         serviceCollection.AddSingleton(sdkClientSettings);
         serviceCollection.AddSingleton<IAuthenticationProvider, JellyfinAuthenticationProvider>();
-        serviceCollection.AddScoped<IRequestAdapter, JellyfinRequestAdapter>(s => new JellyfinRequestAdapter(
+        serviceCollection.AddSingleton<IRequestAdapter, JellyfinRequestAdapter>(s => new JellyfinRequestAdapter(
             s.GetRequiredService<IAuthenticationProvider>(),
             s.GetRequiredService<JellyfinSdkSettings>(),
             s.GetRequiredService<IHttpClientFactory>().CreateClient("Jellyfin")));
-        serviceCollection.AddScoped<JellyfinApiClient>();
+        serviceCollection.AddSingleton<JellyfinApiClient>();
 
         serviceCollection.AddSingleton<AppSettings>();
         serviceCollection.AddSingleton<CardFactory>();
