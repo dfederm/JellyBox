@@ -5,6 +5,7 @@ using Windows.UI.Core;
 using Windows.UI.Input;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+using Windows.UI.Xaml.Input;
 
 namespace JellyBox.Services;
 
@@ -14,6 +15,8 @@ internal sealed class NavigationManager
 {
     // Fake item id used to identify the home page
     public static readonly Guid HomeId = new Guid("CDF95D47-90C2-4057-B12C-BA81C34F2CB9");
+
+    public event Action? MenuOpenRequested;
 
     private Frame _appFrame = null!; // TODO
 
@@ -68,6 +71,8 @@ internal sealed class NavigationManager
     public void NavigateToServerSelection() => NavigateAppFrame<ServerSelection>();
 
     public void NavigateToLogin() => NavigateAppFrame<Login>();
+
+    public void RequestOpenMenu() => MenuOpenRequested?.Invoke();
 
     public void NavigateToHome()
     {
@@ -148,7 +153,7 @@ internal sealed class NavigationManager
 
     private static void NavigateFrame<TPage>(Frame frame, ref object? currentParameter, object? parameter = null)
     {
-        // Only navigate if the selected page isn't currently loaded.
+        // Only navigate if the selected page isn't currently loaded with the same parameter.
         Type pageType = typeof(TPage);
         if (frame.CurrentSourcePageType == pageType && Equals(currentParameter, parameter))
         {
@@ -226,6 +231,12 @@ internal sealed class NavigationManager
     {
         if (e.EventType is not CoreAcceleratorKeyEventType.SystemKeyDown
             and not CoreAcceleratorKeyEventType.KeyDown)
+        {
+            return;
+        }
+
+        // Don't intercept navigation keys when a text input control has focus
+        if (FocusManager.GetFocusedElement() is TextBox or PasswordBox)
         {
             return;
         }

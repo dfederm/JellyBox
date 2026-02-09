@@ -78,6 +78,23 @@ internal sealed partial class ItemDetails : Page
     /// </summary>
     private void ContentGrid_LosingFocus(UIElement sender, LosingFocusEventArgs e)
     {
+        // Trap focus at left/right edges of action buttons so left opens nav menu
+        if (e.Direction is FocusNavigationDirection.Left or FocusNavigationDirection.Right
+            && IsActionButton(e.OldFocusedElement)
+            && !IsActionButton(e.NewFocusedElement))
+        {
+            e.TryCancel();
+
+            // XY focus consumes the key even when cancelled, so MainPage.OnKeyDown never fires.
+            // Open the nav menu directly for left-edge presses.
+            if (e.Direction == FocusNavigationDirection.Left)
+            {
+                ViewModel.RequestOpenMenu();
+            }
+
+            return;
+        }
+
         if (e.Direction is not (FocusNavigationDirection.Up or FocusNavigationDirection.Down))
         {
             return;

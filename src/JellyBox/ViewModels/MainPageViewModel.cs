@@ -14,6 +14,8 @@ internal sealed partial class MainPageViewModel : ObservableObject
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly NavigationManager _navigationManager;
 
+    private bool _isUpdatingSelection;
+
     [ObservableProperty]
     public partial bool IsMenuOpen { get; set; }
 
@@ -32,8 +34,7 @@ internal sealed partial class MainPageViewModel : ObservableObject
         _appSettings = appSettings;
         _jellyfinApiClient = jellyfinApiClient;
         _navigationManager = navigationManager;
-
-        _ = InitializeNavigationItemsAsync();
+        _navigationManager.MenuOpenRequested += () => IsMenuOpen = true;
     }
 
     [RelayCommand]
@@ -49,6 +50,8 @@ internal sealed partial class MainPageViewModel : ObservableObject
     {
         _navigationManager.RegisterContentFrame(contentFrame);
 
+        _ = InitializeNavigationItemsAsync();
+
         if (parameters is not null)
         {
             parameters.DeferredNavigationAction();
@@ -62,6 +65,12 @@ internal sealed partial class MainPageViewModel : ObservableObject
 
     public void NavigationItemSelected(NavigationView _, NavigationViewItemInvokedEventArgs args)
     {
+        // Setting IsSelected programmatically can trigger ItemInvoked in UWP; ignore those.
+        if (_isUpdatingSelection)
+        {
+            return;
+        }
+
         if (args.InvokedItemContainer?.Tag is NavigationViewItemContext context)
         {
             context.NavigateAction();
@@ -79,16 +88,24 @@ internal sealed partial class MainPageViewModel : ObservableObject
 
         if (NavigationItems is not null)
         {
-            foreach (NavigationViewItemBase item in NavigationItems)
+            _isUpdatingSelection = true;
+            try
             {
-                if (item.Tag is NavigationViewItemContext context)
+                foreach (NavigationViewItemBase item in NavigationItems)
                 {
-                    if (context.ItemId == currentItem)
+                    if (item.Tag is NavigationViewItemContext context)
                     {
-                        item.IsSelected = true;
-                        break;
+                        if (context.ItemId == currentItem)
+                        {
+                            item.IsSelected = true;
+                            break;
+                        }
                     }
                 }
+            }
+            finally
+            {
+                _isUpdatingSelection = false;
             }
         }
     }

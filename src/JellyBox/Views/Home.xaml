@@ -14,6 +14,7 @@
         <ScrollViewer
             x:Name="ContentScrollViewer"
             VerticalScrollBarVisibility="Hidden"
+            BringIntoViewOnFocusChange="False"
             HorizontalScrollMode="Disabled">
             <ItemsControl
                 x:Name="SectionsControl"
