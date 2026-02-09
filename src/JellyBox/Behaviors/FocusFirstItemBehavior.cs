@@ -38,6 +38,7 @@ internal sealed class FocusFirstItemBehavior : Behavior<ListViewBase>
         }
 
         _hasFocused = true;
+        AssociatedObject.LayoutUpdated -= OnLayoutUpdated;
         await FocusManager.TryFocusAsync(firstItem, FocusState.Programmatic);
     }
 }

@@ -10,14 +10,14 @@
     mc:Ignorable="d"
     Background="{StaticResource BackgroundBase}">
 
-    <Grid Padding="0,48,0,0">
+    <Grid Padding="0,48,0,0" XYFocusKeyboardNavigation="Enabled">
         <StackPanel 
             HorizontalAlignment="Center" 
             VerticalAlignment="Top" 
             Width="640">
             <TextBlock
                 Text="Please sign in" 
-                Foreground="White"
+                Foreground="{StaticResource TextPrimary}"
                 FontSize="{StaticResource FontL}"
                 Margin="0 0 0 28"
                 HorizontalAlignment="Center" />
@@ -51,6 +51,7 @@
                 Command="{x:Bind ViewModel.SignInCommand}"
                 IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
                 Style="{StaticResource PrimaryButton}"
+                HorizontalAlignment="Stretch"
                 Margin="0 0 0 10" />
             <Button
                 Content="Use Quick Connect"
@@ -58,6 +59,7 @@
                 Command="{x:Bind ViewModel.QuickConnectCommand}"
                 IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
                 Style="{StaticResource SecondaryButton}"
+                HorizontalAlignment="Stretch"
                 Margin="0 0 0 10" />
             <!-- TODO: "Forgot Password" button -->
             <Button
@@ -65,6 +67,7 @@
                 Command="{x:Bind ViewModel.ChangeServerCommand}"
                 IsEnabled="{x:Bind ViewModel.IsInteractable, Mode=OneWay}"
                 Style="{StaticResource SecondaryButton}"
+                HorizontalAlignment="Stretch"
                 Margin="0 0 0 10" />
         </StackPanel>
     </Grid>

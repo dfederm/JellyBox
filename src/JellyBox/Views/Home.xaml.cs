@@ -43,6 +43,7 @@ internal sealed partial class Home : Page
         }
 
         _hasFocusedFirstItem = true;
+        SectionsControl.LayoutUpdated -= SectionsControl_LayoutUpdated;
         await FocusManager.TryFocusAsync(firstItem, FocusState.Programmatic);
     }
 }

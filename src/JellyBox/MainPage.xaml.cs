@@ -89,8 +89,8 @@ internal sealed partial class MainPage : Page
     {
         NavigationOverlay.Visibility = Visibility.Collapsed;
 
-        // Restore focus to previously focused element
-        if (_lastFocusedElement is Control control)
+        // Restore focus to previously focused element (if it's still in the visual tree)
+        if (_lastFocusedElement is Control control && control.IsLoaded)
         {
             control.Focus(FocusState.Keyboard);
         }
@@ -121,6 +121,12 @@ internal sealed partial class MainPage : Page
     /// </summary>
     private void OnKeyDown(object sender, KeyRoutedEventArgs e)
     {
+        // Don't intercept keys when a text input control has focus
+        if (FocusManager.GetFocusedElement() is TextBox or PasswordBox)
+        {
+            return;
+        }
+
         switch (e.Key)
         {
             // Back gesture - close navigation if open

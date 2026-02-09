@@ -345,6 +345,8 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         SelectedSubtitleStream = selectedOption;
     }
 
+    public void RequestOpenMenu() => _navigationManager.RequestOpenMenu();
+
     public void Play()
     {
         // TODO: Support playlists

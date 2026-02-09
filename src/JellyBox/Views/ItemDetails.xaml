@@ -165,8 +165,7 @@
                             x:Name="PlayButton"
                             Style="{StaticResource PrimaryButton}"
                             Click="{x:Bind ViewModel.Play}"
-                            Visibility="{x:Bind ViewModel.CanPlay, Mode=OneWay}"
-                            XYFocusLeft="{x:Bind PlayButton}">
+                            Visibility="{x:Bind ViewModel.CanPlay, Mode=OneWay}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
                                 <FontIcon Glyph="&#xE768;" FontSize="20" />
                                 <TextBlock Text="Play" />
@@ -196,8 +195,7 @@
                             x:Name="FavoriteButton"
                             Style="{StaticResource IconButton}"
                             Click="{x:Bind ViewModel.ToggleFavorite}"
-                            Visibility="{x:Bind ViewModel.CanMarkFavorite, Mode=OneWay}"
-                            XYFocusRight="{x:Bind FavoriteButton}">
+                            Visibility="{x:Bind ViewModel.CanMarkFavorite, Mode=OneWay}">
                             <FontIcon
                                 Glyph="{x:Bind g:Glyphs.HeartFilled}"
                                 FontFamily="{StaticResource SegoeIcons}"

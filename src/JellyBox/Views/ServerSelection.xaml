@@ -10,7 +10,7 @@
     mc:Ignorable="d"
     Background="{StaticResource BackgroundBase}">
 
-    <Grid>
+    <Grid XYFocusKeyboardNavigation="Enabled">
         <StackPanel 
                 HorizontalAlignment="Center" 
                 VerticalAlignment="Top" 
@@ -38,12 +38,13 @@
                     TextAlignment="Center"
                     TextWrapping="Wrap"
                     FontSize="{StaticResource FontM}"
-                    Margin="1 1 1 20"
+                    Margin="0,8,0,8"
                     Foreground="#CF4A4A" />
             <Button 
                     Content="Connect"
                     Command="{x:Bind ViewModel.ConnectCommand}"
-                    Style="{StaticResource PrimaryButton}" />
+                    Style="{StaticResource PrimaryButton}"
+                    HorizontalAlignment="Stretch" />
         </StackPanel>
     </Grid>
 </Page>
