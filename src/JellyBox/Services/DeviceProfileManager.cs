@@ -10,8 +10,11 @@ namespace JellyBox.Services;
 
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes. Used via dependency injection.
 internal sealed class DeviceProfileManager
-#pragma warning disable CA1812 // Avoid uninstantiated internal classes
+#pragma warning restore CA1812
 {
+    // MFVideoFormat_AV1 GUID (FOURCC 'AV01'). CodecSubtypes.VideoFormatAv1 requires a newer API contract.
+    private const string VideoFormatAv1 = "{31305641-0000-0010-8000-00AA00389B71}";
+
     // Supported embedded subtitle formats for UWP MediaPlayer
     public static readonly HashSet<string> SupportedEmbeddedSubtitleFormats = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -53,6 +56,7 @@ internal sealed class DeviceProfileManager
             CodecSubtypes.VideoFormatWvc1.ToString(),
             CodecSubtypes.VideoFormatVP80.ToString(),
             CodecSubtypes.VideoFormatVP90.ToString(),
+            VideoFormatAv1,
         ];
         foreach (string subtype in subtypes)
         {
@@ -79,8 +83,6 @@ internal sealed class DeviceProfileManager
 
         List<string> webmAudioCodecs = ["vorbis"];
 
-        bool canPlayMkv = true; // Can we just assume true? UWP supports it generally.
-
         DeviceProfile profile = new()
         {
             MaxStreamingBitrate = maxBitrate,
@@ -97,69 +99,59 @@ internal sealed class DeviceProfileManager
         List<string> hlsInTsVideoAudioCodecs = [];
         List<string> hlsInFmp4VideoAudioCodecs = [];
 
-        // TODO: Check codecs (any):
-        // video/mp4; codecs="avc1.640029, mp4a.69
-        // video/mp4; codecs="avc1.640029, mp4a.6B"
-        // video/mp4; codecs="avc1.640029, mp3"
-        bool supportsMp3VideoAudio = true;
-
-        // Xbox always renders at 1920 x 1080
-        // TODO: For genericism should this be detected anyway?
+        // Detect max video width from HDMI display modes (4K on Xbox One S and later).
+        // Fall back to 1920 if HDMI info is unavailable (e.g. running on desktop).
         int maxVideoWidth = 1920;
-
-        // TODO: Check codecs
-        bool canPlayAacVideoAudio = true; // 'video/mp4; codecs="avc1.640029, mp4a.40.2"
-        bool canPlayMp3VideoAudioInHls = true; // 'application/x-mpegurl; codecs="avc1.64001E, mp4a.40.34"'
-        bool canPlayAc3VideoAudio = true; // 'audio/mp4; codecs="ac-3"'
-        bool canPlayEac3VideoAudio = true; // 'audio/mp4; codecs="ec-3"'
-        bool canPlayAc3VideoAudioInHls = true; // application/x-mpegurl; codecs="avc1.42E01E, ac-3
+        IReadOnlyList<HdmiDisplayMode>? hdmiModes = HdmiDisplayInformation.GetForCurrentView()?.GetSupportedDisplayModes();
+        if (hdmiModes is not null)
+        {
+            foreach (HdmiDisplayMode mode in hdmiModes)
+            {
+                if (mode.ResolutionWidthInRawPixels > (uint)maxVideoWidth)
+                {
+                    maxVideoWidth = (int)mode.ResolutionWidthInRawPixels;
+                }
+            }
+        }
 
         // Transcoding codec is the first in hlsVideoAudioCodecs.
         // Prefer AAC, MP3 to other codecs when audio transcoding.
-        if (canPlayAacVideoAudio)
+        bool canPlayAac = audioCodecGuids.Contains(CodecSubtypes.AudioFormatAac);
+        if (canPlayAac)
         {
             videoAudioCodecs.Add("aac");
             hlsInTsVideoAudioCodecs.Add("aac");
             hlsInFmp4VideoAudioCodecs.Add("aac");
         }
 
-        if (supportsMp3VideoAudio)
+        bool canPlayMp3 = audioCodecGuids.Contains(CodecSubtypes.AudioFormatMP3);
+        if (canPlayMp3)
         {
             videoAudioCodecs.Add("mp3");
             hlsInTsVideoAudioCodecs.Add("mp3");
-        }
-
-        if (canPlayMp3VideoAudioInHls)
-        {
             hlsInFmp4VideoAudioCodecs.Add("mp3");
         }
 
         // For AC3/EAC3 remuxing.
         // Do not use AC3 for audio transcoding unless AAC and MP3 are not supported.
-        if (canPlayAc3VideoAudio)
+        bool canPlayAc3 = audioCodecGuids.Contains(CodecSubtypes.AudioFormatDolbyAC3);
+        bool canPlayEac3 = audioCodecGuids.Contains(CodecSubtypes.AudioFormatDolbyDDPlus);
+        if (canPlayAc3)
         {
             videoAudioCodecs.Add("ac3");
-
-            if (canPlayEac3VideoAudio)
-            {
-                videoAudioCodecs.Add("eac3");
-            }
-
-            if (canPlayAc3VideoAudioInHls)
-            {
-                hlsInTsVideoAudioCodecs.Add("ac3");
-                hlsInFmp4VideoAudioCodecs.Add("ac3");
-
-                if (canPlayEac3VideoAudio)
-                {
-                    hlsInTsVideoAudioCodecs.Add("eac3");
-                    hlsInFmp4VideoAudioCodecs.Add("eac3");
-                }
-            }
+            hlsInTsVideoAudioCodecs.Add("ac3");
+            hlsInFmp4VideoAudioCodecs.Add("ac3");
         }
 
-        bool supportsMp2VideoAudio = true;
-        if (supportsMp2VideoAudio)
+        if (canPlayEac3)
+        {
+            videoAudioCodecs.Add("eac3");
+            hlsInTsVideoAudioCodecs.Add("eac3");
+            hlsInFmp4VideoAudioCodecs.Add("eac3");
+        }
+
+        bool canPlayMp2 = audioCodecGuids.Contains(CodecSubtypes.AudioFormatMPeg);
+        if (canPlayMp2)
         {
             videoAudioCodecs.Add("mp2");
             hlsInTsVideoAudioCodecs.Add("mp2");
@@ -175,6 +167,7 @@ internal sealed class DeviceProfileManager
         }
 
         // TODO: Check user setting: enableTrueHd
+        // TrueHD is not natively supported on Xbox UWP, but declaring it allows passthrough to capable receivers.
         videoAudioCodecs.Add("truehd");
 
         bool canPlayOpus = audioCodecGuids.Contains(CodecSubtypes.AudioFormatOpus);
@@ -205,11 +198,9 @@ internal sealed class DeviceProfileManager
         List<string> hlsInFmp4VideoCodecs = [];
 
         // av1 main level 5.3
-        // TODO: Check codec: 'video/mp4; codecs="av01.0.15M.08"' or 'video/mp4; codecs="av01.0.15M.10"'
-        bool canPlayAv1 = true;
+        bool canPlayAv1 = videoCodecGuids.Contains(VideoFormatAv1);
         if (canPlayAv1)
         {
-            // disable av1 on non-safari mobile browsers since it can be very slow software decoding
             hlsInFmp4VideoCodecs.Add("av1");
         }
 
@@ -291,10 +282,6 @@ internal sealed class DeviceProfileManager
                     VideoCodec = string.Join(',', mp4VideoCodecs),
                     AudioCodec = string.Join(',', videoAudioCodecs),
                 });
-        }
-
-        if (canPlayMkv && mp4VideoCodecs.Count > 0)
-        {
             profile.DirectPlayProfiles.Add(
                 new DirectPlayProfile
                 {
@@ -407,21 +394,6 @@ internal sealed class DeviceProfileManager
                 });
         }
 
-        bool canPlayMp3 = audioCodecGuids.Contains(CodecSubtypes.AudioFormatMP3);
-        if (canPlayMp3)
-        {
-            if (!canPlayMp3VideoAudioInHls)
-            {
-                profile.DirectPlayProfiles.Add(
-                    new DirectPlayProfile
-                    {
-                        Container = "ts",
-                        Type = DirectPlayProfile_Type.Audio,
-                        AudioCodec = "mp3",
-                    });
-            }
-        }
-
         profile.DirectPlayProfiles.Add(
             new DirectPlayProfile
             {
@@ -429,7 +401,6 @@ internal sealed class DeviceProfileManager
                 Type = DirectPlayProfile_Type.Audio,
             });
 
-        bool canPlayAac = audioCodecGuids.Contains(CodecSubtypes.AudioFormatAac);
         if (canPlayAac)
         {
             profile.DirectPlayProfiles.Add(
@@ -518,20 +489,17 @@ internal sealed class DeviceProfileManager
                 Type = DirectPlayProfile_Type.Audio,
             });
 
-        bool hlsBreakOnNonKeyFrames = false;
-        bool enableFmp4Hls = true; // TODO: check user setting: preferFmp4HlsContainer
-
         profile.TranscodingProfiles.Add(
             new TranscodingProfile
             {
-                Container = enableFmp4Hls ? "mp4" : "ts",
+                Container = "mp4",
                 Type = TranscodingProfile_Type.Audio,
                 AudioCodec = "aac",
                 Context = TranscodingProfile_Context.Streaming,
                 Protocol = TranscodingProfile_Protocol.Hls,
                 MaxAudioChannels = audioChannelCount.ToString(),
                 MinSegments = 1,
-                BreakOnNonKeyFrames = hlsBreakOnNonKeyFrames,
+                BreakOnNonKeyFrames = false,
                 EnableAudioVbrEncoding = false // TODO: ??? !appSettings.disableVbrAudio()
             });
 
@@ -636,7 +604,7 @@ internal sealed class DeviceProfileManager
             MaxAudioChannels = audioChannelCount.ToString(),
         });
 
-        if (hlsInFmp4VideoCodecs.Count > 0 && hlsInFmp4VideoAudioCodecs.Count > 0 && enableFmp4Hls)
+        if (hlsInFmp4VideoCodecs.Count > 0 && hlsInFmp4VideoAudioCodecs.Count > 0)
         {
             // HACK: Since there is no filter for TS/MP4 in the API, specify HLS support in general and rely on retry after DirectPlay error
             // FIXME: Need support for {Container = "mp4", Protocol: "hls"} or {Container = "hls", SubContainer = "mp4"}
@@ -658,198 +626,64 @@ internal sealed class DeviceProfileManager
                 Protocol = TranscodingProfile_Protocol.Hls,
                 MaxAudioChannels = audioChannelCount.ToString(),
                 MinSegments = 1,
-                BreakOnNonKeyFrames = hlsBreakOnNonKeyFrames,
+                BreakOnNonKeyFrames = false,
             });
         }
 
-        List<ProfileCondition> aacCodecProfileConditions = [];
-
-        // Handle he-aac not supported
-        bool heAacSupported = true; // TODO: Check codec 'video/mp4; codecs="avc1.640029, mp4a.40.5"'
-        if (!heAacSupported)
-        {
-            // TODO: This needs to become part of the stream url in order to prevent stream copy
-            aacCodecProfileConditions.Add(
-                new ProfileCondition
-                {
-                    Condition = ProfileCondition_Condition.NotEquals,
-                    Property = ProfileCondition_Property.AudioProfile,
-                    Value = "HE-AAC",
-                });
-        }
-
-        bool supportsSecondaryAudio = false; // TODO
-        if (!supportsSecondaryAudio)
-        {
-            aacCodecProfileConditions.Add(
-                new ProfileCondition
-                {
-                    Condition = ProfileCondition_Condition.Equals,
-                    Property = ProfileCondition_Property.IsSecondaryAudio,
-                    Value = "false",
-                    IsRequired = false
-                });
-        }
-
-        if (aacCodecProfileConditions.Count > 0)
-        {
-            profile.CodecProfiles.Add(
-                new CodecProfile
-                {
-                    Type = CodecProfile_Type.VideoAudio,
-                    Codec = "aac",
-                    Conditions = aacCodecProfileConditions
-                });
-        }
-
-        List<ProfileCondition> globalAudioCodecProfileConditions = [];
-        List<ProfileCondition> globalVideoAudioCodecProfileConditions = [];
-
-        // TODO: Check user settings allowedAudioChannels
-        /*
-
-        if (parseInt(userSettings.allowedAudioChannels(), 10) > 0) {
-            globalAudioCodecProfileConditions.Add({
-                Condition = ProfileCondition_Condition.LessThanEqual',
-                Property = ProfileCondition_Property.AudioChannels',
-                Value = audioChannelCount,
+        // UWP does not support secondary audio tracks
+        List<ProfileCondition> aacCodecProfileConditions =
+        [
+            new ProfileCondition
+            {
+                Condition = ProfileCondition_Condition.Equals,
+                Property = ProfileCondition_Property.IsSecondaryAudio,
+                Value = "false",
                 IsRequired = false
+            },
+        ];
+
+        profile.CodecProfiles.Add(
+            new CodecProfile
+            {
+                Type = CodecProfile_Type.VideoAudio,
+                Codec = "aac",
+                Conditions = aacCodecProfileConditions
             });
 
-            globalVideoAudioCodecProfileConditions.Add({
-                Condition = ProfileCondition_Condition.LessThanEqual',
-                Property = ProfileCondition_Property.AudioChannels',
-                Value = audioChannelCount,
-                IsRequired = false
+        // TODO: Add a user setting for allowed audio channels, then add LessThanEqual AudioChannels
+        // conditions to both globalAudioCodecProfileConditions and globalVideoAudioCodecProfileConditions.
+
+        profile.CodecProfiles.Add(
+            new CodecProfile
+            {
+                Type = CodecProfile_Type.VideoAudio,
+                Conditions =
+                [
+                    new ProfileCondition
+                    {
+                        Condition = ProfileCondition_Condition.Equals,
+                        Property = ProfileCondition_Property.IsSecondaryAudio,
+                        Value = "false",
+                        IsRequired = false
+                    },
+                ],
             });
-        }
-        */
 
-        if (!supportsSecondaryAudio)
-        {
-            globalVideoAudioCodecProfileConditions.Add(
-                new ProfileCondition
-                {
-                    Condition = ProfileCondition_Condition.Equals,
-                    Property = ProfileCondition_Property.IsSecondaryAudio,
-                    Value = "false",
-                    IsRequired = false
-                });
-        }
-
-        if (globalAudioCodecProfileConditions.Count > 0)
-        {
-            profile.CodecProfiles.Add(
-                new CodecProfile
-                {
-                    Type = CodecProfile_Type.Audio,
-                    Conditions = globalAudioCodecProfileConditions
-                });
-        }
-
-        if (globalVideoAudioCodecProfileConditions.Count > 0)
-        {
-            profile.CodecProfiles.Add(
-                new CodecProfile
-                {
-                    Type = CodecProfile_Type.VideoAudio,
-                    Conditions = globalVideoAudioCodecProfileConditions
-                });
-        }
-
-        int maxH264Level = 42;
+        int maxH264Level = 51;
         string h264Profiles = "high|main|baseline|constrained baseline";
 
-        /* TODO: Handle these scenarios
-        if (canPlayType('video/mp4; codecs="avc1.640833"'))
-        {
-            maxH264Level = 51;
-        }
+        int maxHevcLevel = 153; // Level 5.1 (4K@60fps)
+        string hevcProfiles = "main|main 10";
 
-        // Support H264 Level 52 (Tizen 5.0) - app only
-        if (canPlayType('video/mp4; codecs="avc1.640834"'))
-        {
-            maxH264Level = 52;
-        }
-
-        if (canPlayType('video/mp4; codecs="avc1.6e0033"')
-            // These tests are passing in safari, but playback is failing
-            && !browser.edge
-        ) {
-            h264Profiles += '|high 10';
-        }
-        */
-
-        int maxHevcLevel = 120;
-        string hevcProfiles = "main";
-
-        /* TODO: Handle these scenarios
-        // hevc main level 4.1
-        if (canPlayType('video/mp4; codecs="hvc1.1.4.L123"')
-                || canPlayType('video/mp4; codecs="hev1.1.4.L123"')) {
-            maxHevcLevel = 123;
-        }
-
-        // hevc main10 level 4.1
-        if (canPlayType('video/mp4; codecs="hvc1.2.4.L123"')
-                || canPlayType('video/mp4; codecs="hev1.2.4.L123"')) {
-            maxHevcLevel = 123;
-            hevcProfiles = 'main|main 10';
-        }
-
-        // hevc main10 level 5.1
-        if (canPlayType('video/mp4; codecs="hvc1.2.4.L153"')
-                || canPlayType('video/mp4; codecs="hev1.2.4.L153"')) {
-            maxHevcLevel = 153;
-            hevcProfiles = 'main|main 10';
-        }
-
-        // hevc main10 level 6.1
-        if (canPlayType('video/mp4; codecs="hvc1.2.4.L183"')
-                || canPlayType('video/mp4; codecs="hev1.2.4.L183"')) {
-            maxHevcLevel = 183;
-            hevcProfiles = 'main|main 10';
-        }
-        */
-
-        int maxAv1Level = 15; // level 5.3
-        string av1Profiles = "main"; // av1 main covers 4:2:0 8 & 10 bits
-
-        /* TODO: Handle these scenarios
-        // av1 main level 6.0
-        if (videoTestElement.canPlayType('video/mp4; codecs="av01.0.16M.08"')
-                && videoTestElement.canPlayType('video/mp4; codecs="av01.0.16M.10"')) {
-            maxAv1Level = 16;
-        }
-
-        // av1 main level 6.1
-        if (videoTestElement.canPlayType('video/mp4; codecs="av01.0.17M.08"')
-                && videoTestElement.canPlayType('video/mp4; codecs="av01.0.17M.10"')) {
-            maxAv1Level = 17;
-        }
-
-        // av1 main level 6.2
-        if (videoTestElement.canPlayType('video/mp4; codecs="av01.0.18M.08"')
-                && videoTestElement.canPlayType('video/mp4; codecs="av01.0.18M.10"')) {
-            maxAv1Level = 18;
-        }
-
-        // av1 main level 6.3
-        if (videoTestElement.canPlayType('video/mp4; codecs="av01.0.19M.08"')
-                && videoTestElement.canPlayType('video/mp4; codecs="av01.0.19M.10"')) {
-            maxAv1Level = 19;
-        }
-        */
+        int maxAv1Level = 15; // Level 5.3 (covers 4K)
+        string av1Profiles = "main"; // AV1 Main profile covers 4:2:0 8 & 10 bits
 
         string h264VideoRangeTypes = "SDR";
         string hevcVideoRangeTypes = "SDR";
         string vp9VideoRangeTypes = "SDR";
         string av1VideoRangeTypes = "SDR";
 
-        HdmiDisplayInformation hdmiDisplayInformation = HdmiDisplayInformation.GetForCurrentView();
-        IReadOnlyList<HdmiDisplayMode> supportedDisplayModes = hdmiDisplayInformation?.GetSupportedDisplayModes() ?? [];
-
-        bool supportsHdr10 = supportedDisplayModes.Any(mode => mode.IsSmpte2084Supported);
+        bool supportsHdr10 = hdmiModes?.Any(mode => mode.IsSmpte2084Supported) ?? false;
         if (supportsHdr10)
         {
             hevcVideoRangeTypes += "|HDR10";
@@ -857,7 +691,9 @@ internal sealed class DeviceProfileManager
             av1VideoRangeTypes += "|HDR10";
         }
 
-        bool supportsHlg = supportsHdr10; // TODO: Check
+        // HdmiDisplayMode has no IsHlgSupported property and HdmiDisplayHdrOption has no HLG variant.
+        // HLG content plays through the HDR10/ST2084 display pipeline with automatic conversion.
+        bool supportsHlg = supportsHdr10;
         if (supportsHlg)
         {
             hevcVideoRangeTypes += "|HLG";
@@ -865,7 +701,7 @@ internal sealed class DeviceProfileManager
             av1VideoRangeTypes += "|HLG";
         }
 
-        bool supportsDolbyVision = supportedDisplayModes.Any(mode => mode.IsDolbyVisionLowLatencySupported);
+        bool supportsDolbyVision = hdmiModes?.Any(mode => mode.IsDolbyVisionLowLatencySupported) ?? false;
         if (supportsDolbyVision)
         {
             hevcVideoRangeTypes += "|DOVI";
@@ -874,6 +710,8 @@ internal sealed class DeviceProfileManager
             // Profile 10 4k@24fps
             av1VideoRangeTypes += "|DOVI|DOVIWithHDR10|DOVIWithHLG|DOVIWithSDR";
         }
+
+        string maxVideoWidthStr = maxVideoWidth.ToString();
 
         List<ProfileCondition> h264CodecProfileConditions =
         [
@@ -904,7 +742,14 @@ internal sealed class DeviceProfileManager
                 Property = ProfileCondition_Property.VideoLevel,
                 Value = maxH264Level.ToString(),
                 IsRequired = false
-            }
+            },
+            new ProfileCondition
+            {
+                Condition = ProfileCondition_Condition.LessThanEqual,
+                Property = ProfileCondition_Property.Width,
+                Value = maxVideoWidthStr,
+                IsRequired = false
+            },
         ];
 
         List<ProfileCondition> hevcCodecProfileConditions =
@@ -936,7 +781,14 @@ internal sealed class DeviceProfileManager
                 Property = ProfileCondition_Property.VideoLevel,
                 Value = maxHevcLevel.ToString(),
                 IsRequired = false
-            }
+            },
+            new ProfileCondition
+            {
+                Condition = ProfileCondition_Condition.LessThanEqual,
+                Property = ProfileCondition_Property.Width,
+                Value = maxVideoWidthStr,
+                IsRequired = false
+            },
         ];
 
         List<ProfileCondition> vp9CodecProfileConditions =
@@ -947,7 +799,14 @@ internal sealed class DeviceProfileManager
                 Property = ProfileCondition_Property.VideoRangeType,
                 Value = vp9VideoRangeTypes,
                 IsRequired = false
-            }
+            },
+            new ProfileCondition
+            {
+                Condition = ProfileCondition_Condition.LessThanEqual,
+                Property = ProfileCondition_Property.Width,
+                Value = maxVideoWidthStr,
+                IsRequired = false
+            },
         ];
 
         List<ProfileCondition> av1CodecProfileConditions =
@@ -979,57 +838,17 @@ internal sealed class DeviceProfileManager
                 Property = ProfileCondition_Property.VideoLevel,
                 Value = maxAv1Level.ToString(),
                 IsRequired = false
-            }
+            },
+            new ProfileCondition
+            {
+                Condition = ProfileCondition_Condition.LessThanEqual,
+                Property = ProfileCondition_Property.Width,
+                Value = maxVideoWidthStr,
+                IsRequired = false
+            },
         ];
 
-        /* TODO: This needed?
-        if (!browser.edgeUwp) {
-            h264CodecProfileConditions.Add(
-                new ProfileCondition
-                {
-                    Condition = ProfileCondition_Condition.NotEquals,
-                    Property = ProfileCondition_Property.IsInterlaced,
-                    Value = "true",
-                    IsRequired = false
-                });
-
-            hevcCodecProfileConditions.Add(
-                new ProfileCondition
-                {
-                    Condition = ProfileCondition_Condition.NotEquals,
-                    Property = ProfileCondition_Property.IsInterlaced,
-                    Value = "true",
-                    IsRequired = false
-                });
-        }
-        */
-
-        h264CodecProfileConditions.Add(
-            new ProfileCondition
-            {
-                Condition = ProfileCondition_Condition.LessThanEqual,
-                Property = ProfileCondition_Property.Width,
-                Value = maxVideoWidth.ToString(),
-                IsRequired = false
-            });
-
-        hevcCodecProfileConditions.Add(
-            new ProfileCondition
-            {
-                Condition = ProfileCondition_Condition.LessThanEqual,
-                Property = ProfileCondition_Property.Width,
-                Value = maxVideoWidth.ToString(),
-                IsRequired = false
-            });
-
-        av1CodecProfileConditions.Add(
-            new ProfileCondition
-            {
-                Condition = ProfileCondition_Condition.LessThanEqual,
-                Property = ProfileCondition_Property.Width,
-                Value = maxVideoWidth.ToString(),
-                IsRequired = false
-            });
+        // UWP supports hardware deinterlacing, so no interlaced restriction needed.
 
         profile.CodecProfiles.Add(
             new CodecProfile
@@ -1063,34 +882,27 @@ internal sealed class DeviceProfileManager
                 Conditions = av1CodecProfileConditions,
             });
 
-        List<ProfileCondition> globalVideoConditions = [];
-
-        globalVideoConditions.Add(
-            new ProfileCondition
+        profile.CodecProfiles.Add(
+            new CodecProfile
             {
-                Condition = ProfileCondition_Condition.LessThanEqual,
-                Property = ProfileCondition_Property.VideoBitrate,
-                Value = maxBitrate.ToString(),
+                Type = CodecProfile_Type.Video,
+                Conditions =
+                [
+                    new ProfileCondition
+                    {
+                        Condition = ProfileCondition_Condition.LessThanEqual,
+                        Property = ProfileCondition_Property.VideoBitrate,
+                        Value = maxBitrate.ToString(),
+                    },
+                    new ProfileCondition
+                    {
+                        Condition = ProfileCondition_Condition.LessThanEqual,
+                        Property = ProfileCondition_Property.Width,
+                        Value = maxVideoWidthStr,
+                        IsRequired = false,
+                    },
+                ],
             });
-
-        globalVideoConditions.Add(
-            new ProfileCondition
-            {
-                Condition = ProfileCondition_Condition.LessThanEqual,
-                Property = ProfileCondition_Property.Width,
-                Value = maxVideoWidth.ToString(),
-                IsRequired = false,
-            });
-
-        if (globalVideoConditions.Count > 0)
-        {
-            profile.CodecProfiles.Add(
-                new CodecProfile
-                {
-                    Type = CodecProfile_Type.Video,
-                    Conditions = globalVideoConditions,
-                });
-        }
 
         // Subtitle profiles
         foreach (string subtitleFormat in SupportedEmbeddedSubtitleFormats)
@@ -1133,6 +945,7 @@ internal sealed class DeviceProfileManager
             return 2;
         }
 
-        return result.Graph.EncodingProperties.ChannelCount;
+        using AudioGraph graph = result.Graph;
+        return graph.EncodingProperties.ChannelCount;
     }
 }
