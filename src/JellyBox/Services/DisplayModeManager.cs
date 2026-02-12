@@ -52,6 +52,7 @@ internal static class DisplayModeManager
                 return doViOtherwiseHdrOtherwiseSdr;
             case MediaStream_VideoRangeType.DOVIWithHDR10:
             case MediaStream_VideoRangeType.DOVIWithHLG:
+                return doViOtherwiseHdrOtherwiseSdr;
             case MediaStream_VideoRangeType.HDR10:
             case MediaStream_VideoRangeType.HDR10Plus:
             case MediaStream_VideoRangeType.HLG:
