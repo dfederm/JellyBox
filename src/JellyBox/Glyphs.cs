@@ -26,6 +26,10 @@ internal static class Glyphs
     public const string Accept = "\uE8FB";
     public const string More = "\uE712";
 
+    // Sort
+    public const string SortAscending = "\uE74A";
+    public const string SortDescending = "\uE74B";
+
     // Favorites
     public const string HeartOutline = "\uEB51";
     public const string HeartFilled = "\uEB52";
