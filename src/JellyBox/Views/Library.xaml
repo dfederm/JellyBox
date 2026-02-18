@@ -5,31 +5,191 @@
     xmlns:Interactivity="using:Microsoft.Xaml.Interactivity"
     xmlns:Behaviors="using:JellyBox.Behaviors"
     xmlns:controls="using:JellyBox.Controls"
+    xmlns:viewmodels="using:JellyBox.ViewModels"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
     Background="{StaticResource BackgroundBase}">
 
     <Grid XYFocusKeyboardNavigation="Enabled">
-        <Grid Height="100" VerticalAlignment="Top" Canvas.ZIndex="1" IsHitTestVisible="False">
-            <Grid.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                    <GradientStop Color="#FF0A0A0A" Offset="0.0" />
-                    <GradientStop Color="#FF0A0A0A" Offset="0.6" />
-                    <GradientStop Color="#000A0A0A" Offset="1.0" />
-                </LinearGradientBrush>
-            </Grid.Background>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header: Title + Toolbar -->
+        <StackPanel Grid.Row="0" Padding="48,24,48,0">
             <TextBlock
                 Text="{x:Bind ViewModel.Title, Mode=OneWay}"
                 FontSize="{StaticResource FontXL}"
                 FontWeight="SemiBold"
-                Foreground="{StaticResource TextPrimary}"
-                VerticalAlignment="Top"
-                Margin="48,24,0,0" />
-        </Grid>
+                Foreground="{StaticResource TextPrimary}" />
 
+            <!-- Sort/Filter Toolbar -->
+            <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,16,0,8" XYFocusKeyboardNavigation="Enabled">
+                <!-- Sort Button -->
+                <Button
+                    x:Name="SortButton"
+                    Background="{StaticResource BackgroundElevated}"
+                    Foreground="{StaticResource TextPrimary}"
+                    BorderBrush="{StaticResource BorderSubtle}"
+                    BorderThickness="1"
+                    Padding="16,8"
+                    CornerRadius="4"
+                    XYFocusKeyboardNavigation="Enabled">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontFamily="{StaticResource SegoeIcons}" Glyph="&#xE8CB;" FontSize="16" />
+                        <TextBlock Text="{x:Bind ViewModel.SelectedSortOption.Label, Mode=OneWay, FallbackValue='Sort'}" FontSize="{StaticResource FontS}" />
+                        <FontIcon FontFamily="{StaticResource SegoeIcons}"
+                                  Glyph="{x:Bind viewmodels:LibraryViewModel.GetSortDirectionGlyph(ViewModel.IsSortDescending), Mode=OneWay}"
+                                  FontSize="12" />
+                    </StackPanel>
+                    <Button.Flyout>
+                        <Flyout x:Name="SortFlyout" Placement="Bottom">
+                            <StackPanel Width="240" Spacing="8" XYFocusKeyboardNavigation="Enabled">
+                                <TextBlock Text="Sort By" FontSize="{StaticResource FontM}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" />
+                                <ListView
+                                    x:Name="SortListView"
+                                    ItemsSource="{x:Bind ViewModel.SortOptions, Mode=OneWay}"
+                                    SelectedItem="{x:Bind ViewModel.SelectedSortOption, Mode=OneWay}"
+                                    SelectionMode="Single"
+                                    SingleSelectionFollowsFocus="False"
+                                    IsItemClickEnabled="True"
+                                    ItemClick="SortListView_ItemClick"
+                                    XYFocusKeyboardNavigation="Enabled">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="viewmodels:SortOption">
+                                            <TextBlock Text="{x:Bind Label}" FontSize="{StaticResource FontS}" Foreground="{StaticResource TextPrimary}" Padding="4,8" />
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem">
+                                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                            <Setter Property="MinHeight" Value="0" />
+                                            <Setter Property="Padding" Value="4,0" />
+                                        </Style>
+                                    </ListView.ItemContainerStyle>
+                                </ListView>
+
+                                <Rectangle Height="1" Fill="{StaticResource BorderSubtle}" Margin="0,4" />
+
+                                <TextBlock Text="Sort Order" FontSize="{StaticResource FontM}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" />
+                                <Button
+                                    Command="{x:Bind ViewModel.ToggleSortOrderCommand}"
+                                    Background="{StaticResource BackgroundCard}"
+                                    Foreground="{StaticResource TextPrimary}"
+                                    BorderBrush="{StaticResource BorderSubtle}"
+                                    BorderThickness="1"
+                                    Padding="12,8"
+                                    CornerRadius="4"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Left">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon FontFamily="{StaticResource SegoeIcons}"
+                                                  Glyph="{x:Bind viewmodels:LibraryViewModel.GetSortDirectionGlyph(ViewModel.IsSortDescending), Mode=OneWay}"
+                                                  FontSize="14" />
+                                        <TextBlock Text="{x:Bind viewmodels:LibraryViewModel.GetSortDirectionLabel(ViewModel.IsSortDescending), Mode=OneWay}" FontSize="{StaticResource FontS}" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+
+                <!-- Filter Button -->
+                <Button
+                    x:Name="FilterButton"
+                    Background="{StaticResource BackgroundElevated}"
+                    Foreground="{StaticResource TextPrimary}"
+                    BorderBrush="{x:Bind viewmodels:LibraryViewModel.GetFilterBorderBrush(ViewModel.HasActiveFilters), Mode=OneWay}"
+                    BorderThickness="1"
+                    Padding="16,8"
+                    CornerRadius="4"
+                    XYFocusKeyboardNavigation="Enabled"
+                    XYFocusRight="{x:Bind viewmodels:LibraryViewModel.GetFilterXYFocusRight(ViewModel.HasActiveFilters, FilterButton, ClearFiltersButton), Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontFamily="{StaticResource SegoeIcons}" Glyph="&#xE71C;" FontSize="16" />
+                        <TextBlock Text="Filter" FontSize="{StaticResource FontS}" />
+                    </StackPanel>
+                    <Button.Flyout>
+                        <Flyout x:Name="FilterFlyout" Placement="Bottom">
+                            <ScrollViewer MaxHeight="500" VerticalScrollBarVisibility="Auto">
+                                <StackPanel Width="260" Spacing="4" XYFocusKeyboardNavigation="Enabled" TabFocusNavigation="Once">
+
+                                    <!-- Status Filters -->
+                                    <TextBlock Text="Status" FontSize="{StaticResource FontM}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4" IsHitTestVisible="False" />
+                                    <ItemsControl ItemsSource="{x:Bind ViewModel.StatusFilters, Mode=OneWay}" IsTabStop="False" TabFocusNavigation="Once">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="viewmodels:FilterItem">
+                                                <CheckBox Content="{x:Bind Label}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Foreground="{StaticResource TextPrimary}" Margin="0,2" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <!-- Genre Filters -->
+                                    <Rectangle Height="1" Fill="{StaticResource BorderSubtle}" Margin="0,8" Visibility="{x:Bind ViewModel.GenreFilters, Converter={StaticResource EmptyCollectionToVisibilityConverter}, Mode=OneWay}" />
+                                    <TextBlock Text="Genre" FontSize="{StaticResource FontM}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4" IsHitTestVisible="False"
+                                               Visibility="{x:Bind ViewModel.GenreFilters, Converter={StaticResource EmptyCollectionToVisibilityConverter}, Mode=OneWay}" />
+                                    <ItemsControl ItemsSource="{x:Bind ViewModel.GenreFilters, Mode=OneWay}" IsTabStop="False" TabFocusNavigation="Once">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="viewmodels:FilterItem">
+                                                <CheckBox Content="{x:Bind Label}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Foreground="{StaticResource TextPrimary}" Margin="0,2" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <!-- Year Filters -->
+                                    <Rectangle Height="1" Fill="{StaticResource BorderSubtle}" Margin="0,8" Visibility="{x:Bind ViewModel.YearFilters, Converter={StaticResource EmptyCollectionToVisibilityConverter}, Mode=OneWay}" />
+                                    <TextBlock Text="Year" FontSize="{StaticResource FontM}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4" IsHitTestVisible="False"
+                                               Visibility="{x:Bind ViewModel.YearFilters, Converter={StaticResource EmptyCollectionToVisibilityConverter}, Mode=OneWay}" />
+                                    <ItemsControl ItemsSource="{x:Bind ViewModel.YearFilters, Mode=OneWay}" IsTabStop="False" TabFocusNavigation="Once">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="viewmodels:FilterItem">
+                                                <CheckBox Content="{x:Bind Label}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Foreground="{StaticResource TextPrimary}" Margin="0,2" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <!-- Rating Filters -->
+                                    <Rectangle Height="1" Fill="{StaticResource BorderSubtle}" Margin="0,8" Visibility="{x:Bind ViewModel.RatingFilters, Converter={StaticResource EmptyCollectionToVisibilityConverter}, Mode=OneWay}" />
+                                    <TextBlock Text="Parental Rating" FontSize="{StaticResource FontM}" FontWeight="SemiBold" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4" IsHitTestVisible="False"
+                                               Visibility="{x:Bind ViewModel.RatingFilters, Converter={StaticResource EmptyCollectionToVisibilityConverter}, Mode=OneWay}" />
+                                    <ItemsControl ItemsSource="{x:Bind ViewModel.RatingFilters, Mode=OneWay}" IsTabStop="False" TabFocusNavigation="Once">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="viewmodels:FilterItem">
+                                                <CheckBox Content="{x:Bind Label}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Foreground="{StaticResource TextPrimary}" Margin="0,2" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+
+                <!-- Clear Filters Button -->
+                <Button
+                    x:Name="ClearFiltersButton"
+                    Command="{x:Bind ViewModel.ClearFiltersCommand}"
+                    Visibility="{x:Bind ViewModel.HasActiveFilters, Mode=OneWay}"
+                    Background="Transparent"
+                    Foreground="{StaticResource AccentColor}"
+                    BorderThickness="0"
+                    Padding="12,8"
+                    CornerRadius="4"
+                    XYFocusRight="{x:Bind ClearFiltersButton}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon FontFamily="{StaticResource SegoeIcons}" Glyph="&#xE711;" FontSize="12" />
+                        <TextBlock Text="Clear Filters" FontSize="{StaticResource FontS}" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Content Grid -->
         <GridView
-            Padding="48,100,48,48"
+            Grid.Row="1"
+            Padding="48,8,48,48"
             ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}"
             ItemTemplate="{StaticResource Card}"
             ItemContainerStyle="{StaticResource CardGridViewItemStyle}"
@@ -55,6 +215,6 @@
             </GridView.ItemsPanel>
         </GridView>
 
-        <controls:LoadingOverlay Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+        <controls:LoadingOverlay Grid.Row="1" Visibility="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
     </Grid>
 </Page>
