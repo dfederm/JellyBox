@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using JellyBox.Services;
 using Jellyfin.Sdk.Generated.Models;
 using Microsoft.Kiota.Abstractions;
 using Windows.Media.Core;
@@ -20,7 +19,8 @@ internal sealed partial class VideoViewModel
         Guid itemId,
         string? mediaSourceId,
         int? audioStreamIndex,
-        int? subtitleStreamIndex)
+        int? subtitleStreamIndex,
+        long? startTimeTicks)
     {
         DeviceProfile deviceProfile = _deviceProfileManager.Profile;
 
@@ -34,6 +34,7 @@ internal sealed partial class VideoViewModel
             MediaSourceId = mediaSourceId,
             AudioStreamIndex = audioStreamIndex,
             SubtitleStreamIndex = subtitleStreamIndex,
+            StartTimeTicks = startTimeTicks,
         };
 
         PlaybackInfoResponse? response = await _jellyfinApiClient.Items[itemId].PlaybackInfo.PostAsync(playbackInfo);

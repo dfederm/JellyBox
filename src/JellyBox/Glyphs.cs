@@ -14,6 +14,7 @@ internal static class Glyphs
     // Playback
     public const string Play = "\uE768";
     public const string Pause = "\uE769";
+    public const string RepeatAll = "\uE72C";
     public const string Movies = "\uE8B2";
 
     // Volume

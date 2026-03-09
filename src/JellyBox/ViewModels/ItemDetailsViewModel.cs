@@ -110,6 +110,18 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
     public partial bool CanPlay { get; set; }
 
     [ObservableProperty]
+    public partial bool CanResume { get; set; }
+
+    [ObservableProperty]
+    public partial string PlayButtonText { get; set; } = "Play";
+
+    [ObservableProperty]
+    public partial string PlayButtonGlyph { get; set; } = Glyphs.Play;
+
+    [ObservableProperty]
+    public partial string? ResumePositionText { get; set; }
+
+    [ObservableProperty]
     public partial bool CanMarkPlayed { get; set; }
 
     [ObservableProperty]
@@ -356,7 +368,21 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
                 Item!,
                 SelectedSourceContainer.Value.Id!,
                 SelectedAudioStream?.Index,
-                SelectedSubtitleStream?.Index);
+                SelectedSubtitleStream?.Index,
+                startPositionTicks: 0);
+        }
+    }
+
+    public void Resume()
+    {
+        if (SelectedSourceContainer is not null && Item?.UserData?.PlaybackPositionTicks is > 0)
+        {
+            _navigationManager.NavigateToVideo(
+                Item,
+                SelectedSourceContainer.Value.Id!,
+                SelectedAudioStream?.Index,
+                SelectedSubtitleStream?.Index,
+                Item.UserData.PlaybackPositionTicks.Value);
         }
     }
 
@@ -379,7 +405,8 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
                         localTrailers[0],
                         mediaSourceId: null,
                         audioStreamIndex: null,
-                        subtitleStreamIndex: null);
+                        subtitleStreamIndex: null,
+                        startPositionTicks: 0);
                     return;
                 }
             }
@@ -470,6 +497,14 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         return $"Ends at {endDate:t}";
     }
 
+    private static string FormatResumePosition(long ticks)
+    {
+        TimeSpan time = TimeSpan.FromTicks(ticks);
+        return time.TotalHours >= 1
+            ? $"{(int)time.TotalHours}:{time.Minutes:D2}"
+            : $"{time.Minutes}:{time.Seconds:D2}";
+    }
+
     private void UpdateUserData()
     {
         if (Item is null)
@@ -479,6 +514,12 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
         IsPlayed = Item.UserData!.Played.GetValueOrDefault();
         IsFavorite = Item.UserData.IsFavorite.GetValueOrDefault();
+
+        long positionTicks = Item.UserData.PlaybackPositionTicks.GetValueOrDefault();
+        CanResume = CanPlay && positionTicks > 0;
+        PlayButtonText = CanResume ? "Play from Beginning" : "Play";
+        PlayButtonGlyph = CanResume ? Glyphs.RepeatAll : Glyphs.Play;
+        ResumePositionText = CanResume ? FormatResumePosition(positionTicks) : null;
     }
 
     private async Task<Section?> GetNextUpSectionAsync()

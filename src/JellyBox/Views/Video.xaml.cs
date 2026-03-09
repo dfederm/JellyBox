@@ -135,5 +135,5 @@ internal sealed partial class Video : Page
         }
     }
 
-    internal sealed record Parameters(BaseItemDto Item, string? MediaSourceId, int? AudioStreamIndex, int? SubtitleStreamIndex);
+    internal sealed record Parameters(BaseItemDto Item, string? MediaSourceId, int? AudioStreamIndex, int? SubtitleStreamIndex, long StartPositionTicks);
 }

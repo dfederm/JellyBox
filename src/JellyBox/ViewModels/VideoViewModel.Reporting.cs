@@ -23,6 +23,7 @@ internal sealed partial class VideoViewModel
                     PlaySessionId = _playbackProgressInfo.PlaySessionId,
                     AudioStreamIndex = _playbackProgressInfo.AudioStreamIndex,
                     SubtitleStreamIndex = _playbackProgressInfo.SubtitleStreamIndex,
+                    PositionTicks = _playbackProgressInfo.PositionTicks,
                 });
     }
 
