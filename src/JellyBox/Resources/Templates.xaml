@@ -56,11 +56,83 @@
             <Border
                 CornerRadius="{StaticResource CardCornerRadius}"
                 Background="{StaticResource BackgroundCard}">
-                <controls:LazyLoadedImage
-                    ImageUri="{x:Bind Image.Uri}"
-                    BlurHash="{x:Bind Image.BlurHash}"
-                    Width="{x:Bind ImageWidth}"
-                    Height="{x:Bind ImageHeight}" />
+                <Grid>
+                    <controls:LazyLoadedImage
+                        ImageUri="{x:Bind Image.Uri}"
+                        BlurHash="{x:Bind Image.BlurHash}"
+                        Width="{x:Bind ImageWidth}"
+                        Height="{x:Bind ImageHeight}" />
+
+                    <!-- Favorite indicator (top-left) -->
+                    <Border
+                        Visibility="{x:Bind IsFavorite}"
+                        HorizontalAlignment="Left"
+                        VerticalAlignment="Top"
+                        Margin="6"
+                        Background="{StaticResource CardIndicatorBackground}"
+                        CornerRadius="12"
+                        Width="24"
+                        Height="24">
+                        <FontIcon
+                            FontFamily="{StaticResource SegoeIcons}"
+                            Glyph="&#xEB52;"
+                            FontSize="14"
+                            Foreground="{StaticResource FavoriteColor}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+                    </Border>
+
+                    <!-- Played indicator (top-right) -->
+                    <Border
+                        Visibility="{x:Bind ShowPlayedIndicator}"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Margin="6"
+                        Background="{StaticResource CardIndicatorBackground}"
+                        CornerRadius="12"
+                        Width="24"
+                        Height="24">
+                        <FontIcon
+                            FontFamily="{StaticResource SegoeIcons}"
+                            Glyph="&#xE73E;"
+                            FontSize="14"
+                            Foreground="White"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+                    </Border>
+
+                    <!-- Unplayed count indicator (top-right) -->
+                    <Border
+                        Visibility="{x:Bind ShowUnplayedCount}"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Top"
+                        Margin="6"
+                        Background="{StaticResource AccentColor}"
+                        CornerRadius="12"
+                        MinWidth="24"
+                        Height="24"
+                        Padding="6,0">
+                        <TextBlock
+                            Text="{x:Bind UnplayedCountText}"
+                            FontSize="12"
+                            FontWeight="Bold"
+                            Foreground="White"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+                    </Border>
+
+                    <!-- Progress bar (bottom) -->
+                    <Grid
+                        Visibility="{x:Bind HasProgress}"
+                        Height="4"
+                        VerticalAlignment="Bottom">
+                        <Rectangle Fill="{StaticResource ProgressTrackBackground}" />
+                        <Rectangle
+                            Fill="{StaticResource AccentColor}"
+                            HorizontalAlignment="Left"
+                            Width="{x:Bind ProgressWidth}" />
+                    </Grid>
+                </Grid>
             </Border>
             <TextBlock
                 Grid.Row="1"

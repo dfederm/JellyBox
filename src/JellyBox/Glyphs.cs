@@ -34,4 +34,7 @@ internal static class Glyphs
     // Favorites
     public const string HeartOutline = "\uEB51";
     public const string HeartFilled = "\uEB52";
+
+    // Indicators
+    public const string Checkmark = "\uE73E";
 }
