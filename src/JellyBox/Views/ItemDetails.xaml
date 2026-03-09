@@ -86,7 +86,7 @@
                 </Border>
                 
                 <!-- Content Info -->
-                <StackPanel x:Name="ContentInfoPanel" Grid.Column="1" Grid.Row="0" MaxWidth="800" HorizontalAlignment="Left" XYFocusKeyboardNavigation="Enabled">
+                <StackPanel x:Name="ContentInfoPanel" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Left" XYFocusKeyboardNavigation="Enabled">
                     
                     <!-- Logo or Title -->
                     <Image 
@@ -106,7 +106,9 @@
                         FontWeight="Bold"
                         Foreground="{StaticResource TextPrimary}"
                         TextWrapping="Wrap"
-                        MaxLines="2" />
+                        MaxLines="2"
+                        MaxWidth="800"
+                        HorizontalAlignment="Left" />
                     
                     <!-- Media Info (Year, Rating, Duration) -->
                     <ListView
@@ -143,6 +145,8 @@
                         FontStyle="Italic"
                         Foreground="{StaticResource TextSecondary}"
                         TextWrapping="Wrap"
+                        MaxWidth="800"
+                        HorizontalAlignment="Left"
                         Margin="0,20,0,0"
                         Visibility="{x:Bind ViewModel.TagLine, Mode=OneWay, Converter={StaticResource VisibleIfNotNullConverter}}" />
                     
@@ -153,6 +157,8 @@
                         Foreground="{StaticResource TextSecondary}"
                         TextWrapping="Wrap"
                         MaxLines="4"
+                        MaxWidth="800"
+                        HorizontalAlignment="Left"
                         Margin="0,16,0,0" />
                     
                     <!-- Action Buttons -->
@@ -162,13 +168,25 @@
                         Spacing="16"
                         XYFocusKeyboardNavigation="Enabled">
                         <Button
-                            x:Name="PlayButton"
+                            x:Name="ResumeButton"
                             Style="{StaticResource PrimaryButton}"
+                            Click="{x:Bind ViewModel.Resume}"
+                            Visibility="{x:Bind ViewModel.CanResume, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <FontIcon Glyph="{x:Bind g:Glyphs.Play}" FontFamily="{StaticResource SegoeIcons}" FontSize="20" />
+                                <TextBlock>
+                                    <Run Text="Resume from " /><Run Text="{x:Bind ViewModel.ResumePositionText, Mode=OneWay}" />
+                                </TextBlock>
+                            </StackPanel>
+                        </Button>
+                        <Button
+                            x:Name="PlayButton"
+                            Style="{x:Bind GetPlayButtonStyle(ViewModel.CanResume), Mode=OneWay}"
                             Click="{x:Bind ViewModel.Play}"
                             Visibility="{x:Bind ViewModel.CanPlay, Mode=OneWay}">
                             <StackPanel Orientation="Horizontal" Spacing="12">
-                                <FontIcon Glyph="&#xE768;" FontSize="20" />
-                                <TextBlock Text="Play" />
+                                <FontIcon Glyph="{x:Bind ViewModel.PlayButtonGlyph, Mode=OneWay}" FontFamily="{StaticResource SegoeIcons}" FontSize="20" />
+                                <TextBlock Text="{x:Bind ViewModel.PlayButtonText, Mode=OneWay}" />
                             </StackPanel>
                         </Button>
                         <Button

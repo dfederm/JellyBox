@@ -117,10 +117,10 @@ internal sealed class NavigationManager
         NavigateContentFrame<ItemDetails>(new ItemDetails.Parameters(itemId));
     }
 
-    public void NavigateToVideo(BaseItemDto item, string? mediaSourceId, int? audioStreamIndex, int? subtitleStreamIndex)
+    public void NavigateToVideo(BaseItemDto item, string? mediaSourceId, int? audioStreamIndex, int? subtitleStreamIndex, long startPositionTicks)
     {
         CurrentItem = item.Id;
-        NavigateAppFrame<Video>(new Video.Parameters(item, mediaSourceId, audioStreamIndex, subtitleStreamIndex));
+        NavigateAppFrame<Video>(new Video.Parameters(item, mediaSourceId, audioStreamIndex, subtitleStreamIndex, startPositionTicks));
     }
 
     public void NavigateToWebVideo(Uri videoUri)

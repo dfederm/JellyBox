@@ -40,12 +40,18 @@ internal sealed partial class VideoViewModel
             // Initialize state
             _transportControls.IsFavorite = item.UserData?.IsFavorite ?? false;
 
-            // Calculate initial "Ends at" from metadata
-            // TODO: Once resume functionality is implemented, use the actual start position
-            // (e.g., item.UserData?.PlaybackPositionTicks) instead of assuming start from beginning.
+            // Determine start position from parameters
+            TimeSpan startPosition = TimeSpan.FromTicks(parameters.StartPositionTicks);
+
+            // Calculate initial "Ends at" from metadata, accounting for resume position
             if (item.RunTimeTicks.HasValue)
             {
-                TimeSpan remaining = TimeSpan.FromTicks(item.RunTimeTicks.Value);
+                TimeSpan remaining = TimeSpan.FromTicks(item.RunTimeTicks.Value) - startPosition;
+                if (remaining < TimeSpan.Zero)
+                {
+                    remaining = TimeSpan.Zero;
+                }
+
                 DateTime endTime = DateTime.Now + remaining;
                 _transportControls.EndsAtText = $"Ends at {endTime:t}";
             }
@@ -58,6 +64,7 @@ internal sealed partial class VideoViewModel
                 ItemId = item.Id!.Value,
                 AudioStreamIndex = parameters.AudioStreamIndex,
                 SubtitleStreamIndex = parameters.SubtitleStreamIndex,
+                PositionTicks = startPosition.Ticks,
             };
 
 #pragma warning disable CA2000 // Dispose objects before losing scope. Disposed in StopVideo.
@@ -118,9 +125,7 @@ internal sealed partial class VideoViewModel
                 await ReportProgressAsync();
             };
 
-            // TODO: Once resume functionality is implemented, use the actual start position
-            // (e.g., item.UserData?.PlaybackPositionTicks) instead of assuming start from beginning.
-            await StartPlaybackAsync(parameters.MediaSourceId, TimeSpan.Zero);
+            await StartPlaybackAsync(parameters.MediaSourceId, startPosition);
 
             await ReportStartedAsync();
 
@@ -222,7 +227,8 @@ internal sealed partial class VideoViewModel
             _currentItem.Id!.Value,
             mediaSourceId,
             _playbackProgressInfo.AudioStreamIndex,
-            _playbackProgressInfo.SubtitleStreamIndex);
+            _playbackProgressInfo.SubtitleStreamIndex,
+            startPosition.Ticks);
 
         if (mediaSourceInfo is null)
         {

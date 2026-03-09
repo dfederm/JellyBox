@@ -45,7 +45,7 @@ internal sealed partial class ItemDetails : Page
             return;
         }
 
-        Button? target = FindFirstVisible(PlayButton, TrailerButton, PlayedButton, FavoriteButton, VersionButton, AudioButton, SubtitleButton);
+        Button? target = FindFirstVisible(ResumeButton, PlayButton, TrailerButton, PlayedButton, FavoriteButton, VersionButton, AudioButton, SubtitleButton);
         if (target is null)
         {
             return;
@@ -163,7 +163,7 @@ internal sealed partial class ItemDetails : Page
         }
 
         // Fall back to action buttons (horizontal row — pick closest)
-        AddIfVisible(candidates, PlayButton, TrailerButton, PlayedButton, FavoriteButton);
+        AddIfVisible(candidates, ResumeButton, PlayButton, TrailerButton, PlayedButton, FavoriteButton);
 
         if (candidates.Count == 0)
         {
@@ -229,8 +229,14 @@ internal sealed partial class ItemDetails : Page
 
     #region Helpers
 
+#pragma warning disable CA1822 // Used by x:Bind
+    private Style GetPlayButtonStyle(bool canResume)
+#pragma warning restore CA1822
+        => (Style)Application.Current.Resources[canResume ? "SecondaryButton" : "PrimaryButton"];
+
     private bool IsActionButton(object? element)
-        => ReferenceEquals(element, PlayButton)
+        => ReferenceEquals(element, ResumeButton)
+            || ReferenceEquals(element, PlayButton)
             || ReferenceEquals(element, TrailerButton)
             || ReferenceEquals(element, PlayedButton)
             || ReferenceEquals(element, FavoriteButton);
