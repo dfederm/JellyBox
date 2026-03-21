@@ -11,9 +11,22 @@
     <PublishAot>true</PublishAot>
     <PublishProfile>win-$(Platform).pubxml</PublishProfile>
     <DisableRuntimeMarshalling>true</DisableRuntimeMarshalling>
+    <DisableEmbeddedXbf>true</DisableEmbeddedXbf>
     <EnableMsixTooling>true</EnableMsixTooling>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <!--
+    Workaround: UseArtifactsOutput causes XBF files to lose their directory prefix
+    in the package layout. This target re-adds them as Content with correct paths.
+    See: https://github.com/dotnet/sdk/issues/53556
+  -->
+  <Target Name="FixXbfContentPaths" AfterTargets="MarkupCompilePass2">
+    <ItemGroup>
+      <Content Include="@(_GeneratedXbfFiles)" Link="$([MSBuild]::MakeRelative($(IntermediateOutputPath), %(FullPath)))" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="Blurhash.Core" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
