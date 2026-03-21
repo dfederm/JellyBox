@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using JellyBox.Services;
@@ -68,7 +69,7 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in LoginViewModel.Initialize: {ex}");
+            Debug.WriteLine($"Error in LoginViewModel.Initialize: {ex}");
         }
     }
 
@@ -105,8 +106,8 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            // TODO: Need a friendlier message.
-            UpdateErrorMessage(ex.Message);
+            Debug.WriteLine($"Login failed: {ex}");
+            UpdateErrorMessage(GetFriendlyErrorMessage(ex));
             return;
         }
         finally
@@ -177,7 +178,7 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
                 {
                     // Timer callbacks with async void can crash the app if exceptions propagate.
                     // Log and suppress to prevent app termination.
-                    System.Diagnostics.Debug.WriteLine($"Error in PollQuickConnectAsync: {ex}");
+                    Debug.WriteLine($"Error in PollQuickConnectAsync: {ex}");
                 }
             }
 
@@ -185,8 +186,8 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            // TODO: Need a friendlier message.
-            UpdateErrorMessage(ex.Message);
+            Debug.WriteLine($"Quick Connect failed: {ex}");
+            UpdateErrorMessage(GetFriendlyErrorMessage(ex));
             return;
         }
         finally
@@ -207,8 +208,7 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
         string? accessToken = authenticationResult?.AccessToken;
         if (accessToken is null)
         {
-            // TODO
-            UpdateErrorMessage("Unexpected authentication failure");
+            UpdateErrorMessage("Authentication failed. Please try again.");
             return false;
         }
 
@@ -232,4 +232,12 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
         ShowErrorMessage = true;
         ErrorMessage = message;
     }
+
+    private static string GetFriendlyErrorMessage(Exception ex)
+        => ex switch
+        {
+            HttpRequestException => "Unable to connect to the server. Please check your connection and try again.",
+            TaskCanceledException => "The request timed out. Please try again.",
+            _ => "An error occurred during login. Please try again.",
+        };
 }

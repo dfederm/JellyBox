@@ -52,6 +52,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Border
                 CornerRadius="{StaticResource CardCornerRadius}"
@@ -142,7 +143,19 @@
                 MaxLines="2"
                 Foreground="{StaticResource TextSecondary}"
                 FontSize="{StaticResource FontS}"
-                Padding="4,10,4,10"
+                Padding="4,10,4,0"
+                MaxWidth="{x:Bind ImageWidth}" />
+            <TextBlock
+                Grid.Row="2"
+                Visibility="{x:Bind HasSecondaryText}"
+                Text="{x:Bind SecondaryText}"
+                TextAlignment="Center"
+                TextTrimming="CharacterEllipsis"
+                MaxLines="1"
+                Foreground="{StaticResource TextSecondary}"
+                FontSize="{StaticResource FontXS}"
+                Opacity="0.7"
+                Padding="4,2,4,0"
                 MaxWidth="{x:Bind ImageWidth}" />
         </Grid>
     </DataTemplate>

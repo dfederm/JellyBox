@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -270,9 +271,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             string? displayTitle = videoStream.DisplayTitle;
             if (string.IsNullOrEmpty(displayTitle))
             {
-                // DisplayTitle isn't always populated for video
-                // TODO: Get the resolution text and codec. See /src/controllers/itemDetails/index.js::renderVideoSelections
-                displayTitle = "TODO";
+                displayTitle = GetVideoStreamDisplayTitle(videoStream);
             }
 
             int index = videoStream.Index.GetValueOrDefault();
@@ -707,6 +706,47 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
     private static readonly Regex YouTubeRegex = new(
         @"(?<urlBase>https://www.youtube.com)/watch\?v=(?<id>[^&]+)",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+
+    private static string GetVideoStreamDisplayTitle(MediaStream videoStream)
+    {
+        List<string> parts = [];
+
+        string? resolutionText = GetResolutionText(videoStream);
+        if (resolutionText is not null)
+        {
+            parts.Add(resolutionText);
+        }
+
+        if (!string.IsNullOrEmpty(videoStream.Codec))
+        {
+            parts.Add(videoStream.Codec.ToUpperInvariant());
+        }
+
+        return parts.Count > 0 ? string.Join(' ', parts) : string.Create(CultureInfo.InvariantCulture, $"{videoStream.Width}x{videoStream.Height}");
+    }
+
+    private static string? GetResolutionText(MediaStream stream)
+    {
+        int? width = stream.Width;
+        int? height = stream.Height;
+
+        if (width is null || height is null)
+        {
+            return null;
+        }
+
+        bool isInterlaced = stream.IsInterlaced ?? false;
+
+        return (width, height) switch
+        {
+            ( >= 3800, _) or (_, >= 2000) => "4K",
+            ( >= 2500, _) or (_, >= 1400) => isInterlaced ? "1440i" : "1440p",
+            ( >= 1800, _) or (_, >= 1000) => isInterlaced ? "1080i" : "1080p",
+            ( >= 1200, _) or (_, >= 700) => isInterlaced ? "720i" : "720p",
+            ( >= 700, _) or (_, >= 400) => isInterlaced ? "480i" : "480p",
+            _ => null,
+        };
+    }
 
     private sealed class MediaStreamComparer : IComparer<MediaStream>
     {
