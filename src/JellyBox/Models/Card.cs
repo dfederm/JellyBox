@@ -16,6 +16,8 @@ internal sealed record Card : INavigable
 {
     public required string Name { get; init; }
 
+    public string? SecondaryText { get; init; }
+
     public required int ImageWidth { get; init; }
 
     public required int ImageHeight { get; init; }
@@ -41,4 +43,6 @@ internal sealed record Card : INavigable
     public string UnplayedCountText => UnplayedItemCount >= 100 ? "99+" : UnplayedItemCount.ToString(CultureInfo.InvariantCulture);
 
     public double ProgressWidth => ImageWidth * PlayedPercentage / 100.0;
+
+    public bool HasSecondaryText => !string.IsNullOrEmpty(SecondaryText);
 }

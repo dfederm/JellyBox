@@ -1,3 +1,4 @@
+using System.Globalization;
 using CommunityToolkit.Mvvm.Input;
 using JellyBox.Services;
 using Jellyfin.Sdk.Generated.Models;
@@ -62,7 +63,8 @@ internal sealed class CardFactory
 
         return new Card
         {
-            Name = item.Name!,
+            Name = GetDisplayName(item),
+            SecondaryText = GetSecondaryText(item),
             ImageWidth = imageWidth,
             ImageHeight = imageHeight,
             Image = image,
@@ -86,12 +88,66 @@ internal sealed class CardFactory
         return new Card
         {
             Name = person.Name!,
-            // TODO: Cards need secondardy text to display Role
+            SecondaryText = person.Role,
             ImageWidth = imageWidth,
             ImageHeight = imageHeight,
             Image = image,
             NavigateCommand = new RelayCommand(() => _navigationManager.NavigateToPerson(person)),
         };
+    }
+
+    private static string GetDisplayName(BaseItemDto item)
+        => item.Type switch
+        {
+            BaseItemDto_Type.Episode => item.SeriesName ?? item.Name!,
+            _ => item.Name!,
+        };
+
+    private static string? GetSecondaryText(BaseItemDto item)
+        => item.Type switch
+        {
+            BaseItemDto_Type.Episode => GetEpisodeText(item),
+            BaseItemDto_Type.Season => item.SeriesName,
+            BaseItemDto_Type.MusicAlbum => item.AlbumArtist,
+            BaseItemDto_Type.Audio => item.AlbumArtist ?? item.Album,
+            BaseItemDto_Type.MusicVideo => item.AlbumArtist ?? item.Album,
+            BaseItemDto_Type.Series => GetSeriesYearText(item),
+            BaseItemDto_Type.Movie => item.ProductionYear?.ToString(CultureInfo.InvariantCulture),
+            _ => null,
+        };
+
+    private static string? GetSeriesYearText(BaseItemDto item)
+    {
+        if (item.ProductionYear is null)
+        {
+            return null;
+        }
+
+        string startYear = item.ProductionYear.Value.ToString(CultureInfo.InvariantCulture);
+
+        if (string.Equals(item.Status, "Continuing", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"{startYear} - Present";
+        }
+
+        if (item.EndDate.HasValue)
+        {
+            string endYear = item.EndDate.Value.Year.ToString(CultureInfo.InvariantCulture);
+            return endYear == startYear ? startYear : $"{startYear} - {endYear}";
+        }
+
+        return startYear;
+    }
+
+    private static string GetEpisodeText(BaseItemDto item)
+    {
+        string prefix = item.ParentIndexNumber.HasValue && item.IndexNumber.HasValue
+            ? $"S{item.ParentIndexNumber.Value}:E{item.IndexNumber.Value} - "
+            : item.IndexNumber.HasValue
+                ? $"E{item.IndexNumber.Value} - "
+                : string.Empty;
+
+        return $"{prefix}{item.Name}";
     }
 
     private static double GetAspectRatio(CardShape shape)
