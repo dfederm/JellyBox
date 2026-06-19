@@ -24,7 +24,6 @@
                 MaxWidth="720"
                 HorizontalAlignment="Stretch"
                 PlaceholderText="Search movies and TV shows"
-                TextMemberPath="DisplayText"
                 Style="{StaticResource SearchAutoSuggestBox}"
                 ItemsSource="{x:Bind ViewModel.Search.Suggestions, Mode=OneWay}"
                 TextChanged="SearchBox_TextChanged"
