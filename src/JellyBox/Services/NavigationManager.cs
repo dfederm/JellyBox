@@ -18,6 +18,21 @@ internal sealed class NavigationManager
 
     public event Action? MenuOpenRequested;
 
+    /// <summary>
+    /// Opens the shell navigation menu.
+    /// </summary>
+    public Action? OpenNavigationMenu { get; set; }
+
+    /// <summary>
+    /// Toggles the shell navigation menu.
+    /// </summary>
+    public Action? ToggleNavigationMenu { get; set; }
+
+    /// <summary>
+    /// Closes the shell navigation menu when open. Returns true if the menu was closed.
+    /// </summary>
+    public Func<bool>? TryCloseNavigationMenu { get; set; }
+
     private Frame _appFrame = null!; // TODO
 
     private Frame? _contentFrame;
@@ -45,6 +60,7 @@ internal sealed class NavigationManager
 
         SystemNavigationManager.GetForCurrentView().BackRequested += BackRequested;
         Window.Current.CoreWindow.Dispatcher.AcceleratorKeyActivated += AcceleratorKeyActivated;
+        Window.Current.CoreWindow.KeyDown += CoreWindowKeyDown;
         Window.Current.CoreWindow.PointerPressed += PointerPressed;
     }
 
@@ -250,9 +266,18 @@ internal sealed class NavigationManager
         bool onlyAlt = menuKey && !controlKey && !shiftKey;
         VirtualKey virtualKey = e.VirtualKey;
 
-        if ((virtualKey is VirtualKey.GoBack && noModifiers)
-            || (virtualKey is VirtualKey.Left && onlyAlt)
-            || (virtualKey is VirtualKey.Back && noModifiers))
+        if (GamepadInput.IsBackKey(virtualKey) && noModifiers)
+        {
+            if (TryCloseNavigationMenu?.Invoke() == true)
+            {
+                e.Handled = true;
+            }
+            else
+            {
+                e.Handled = GoBack();
+            }
+        }
+        else if (virtualKey is VirtualKey.Left && onlyAlt)
         {
             e.Handled = GoBack();
         }
@@ -260,6 +285,51 @@ internal sealed class NavigationManager
             || (virtualKey is VirtualKey.Right && onlyAlt))
         {
             e.Handled = GoForward();
+        }
+    }
+
+    /// <summary>
+    /// Global gamepad and keyboard shortcuts for the main app shell (home, library, details).
+    /// Full-screen pages such as video playback register their own handlers.
+    /// </summary>
+    private void CoreWindowKeyDown(CoreWindow sender, KeyEventArgs e)
+    {
+        if (_contentFrame is null || GamepadInput.IsTextInputFocused())
+        {
+            return;
+        }
+
+        VirtualKey key = e.VirtualKey;
+
+        if (GamepadInput.IsMenuToggleKey(key))
+        {
+            ToggleNavigationMenu?.Invoke();
+            e.Handled = true;
+            return;
+        }
+
+        if (GamepadInput.IsBackKey(key) && TryCloseNavigationMenu?.Invoke() == true)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        if (key is VirtualKey.Escape && TryCloseNavigationMenu?.Invoke() == true)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        if (GamepadInput.IsNavigateRightKey(key) && TryCloseNavigationMenu?.Invoke() == true)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        if (GamepadInput.IsNavigateLeftKey(key) && !FocusManager.TryMoveFocus(FocusNavigationDirection.Left))
+        {
+            OpenNavigationMenu?.Invoke();
+            e.Handled = true;
         }
     }
 

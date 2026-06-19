@@ -1,6 +1,6 @@
-﻿using JellyBox.ViewModels;
+﻿using JellyBox.Services;
+using JellyBox.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Windows.System;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Navigation;
@@ -33,7 +33,7 @@ internal sealed partial class Login : Page
 
     private void OnKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key is VirtualKey.Enter or VirtualKey.GamepadMenu
+        if (GamepadInput.IsAcceptKey(e.Key)
             && ViewModel.SignInCommand.CanExecute(null))
         {
             ViewModel.SignInCommand.Execute(null);
