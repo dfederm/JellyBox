@@ -41,6 +41,9 @@ internal sealed partial class ItemDetails : Page
         ViewModel.HandleParameters((Parameters)e.Parameter);
     }
 
+    protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+        => ViewModel.CancelLoading();
+
     internal sealed record Parameters(Guid ItemId);
 
     #region Initial Focus
@@ -240,6 +243,16 @@ internal sealed partial class ItemDetails : Page
     private Style GetPlayButtonStyle(bool canResume)
 #pragma warning restore CA1822
         => (Style)Application.Current.Resources[canResume ? "SecondaryButton" : "PrimaryButton"];
+
+#pragma warning disable CA1822 // Used by x:Bind
+    private string GetSourceContainerName(MediaSourceInfoWrapper? source)
+#pragma warning restore CA1822
+        => source?.Value?.Name ?? string.Empty;
+
+#pragma warning disable CA1822 // Used by x:Bind
+    private string GetStreamDisplayText(MediaStreamOption? stream)
+#pragma warning restore CA1822
+        => stream?.DisplayText ?? string.Empty;
 
     private bool IsActionButton(object? element)
         => ReferenceEquals(element, ResumeButton)

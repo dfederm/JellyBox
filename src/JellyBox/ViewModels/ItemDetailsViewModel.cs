@@ -144,9 +144,12 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         _cardFactory = cardFactory;
     }
 
+    public void CancelLoading() => Interlocked.Increment(ref _loadVersion);
+
     internal async void HandleParameters(ItemDetails.Parameters parameters)
     {
         int version = Interlocked.Increment(ref _loadVersion);
+        ResetDisplayState();
 
         try
         {
@@ -213,12 +216,20 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
             if (Item.MediaSources is not null && Item.MediaSources.Count > 0)
             {
-                SourceContainers = new ObservableCollection<MediaSourceInfoWrapper>(Item.MediaSources.Select(s => new MediaSourceInfoWrapper(s.Name!, s)));
+                SourceContainers = new ObservableCollection<MediaSourceInfoWrapper>(
+                    Item.MediaSources.Select(s => new MediaSourceInfoWrapper(s.Name ?? "Unknown", s)));
                 HasMultipleSources = SourceContainers.Count > 1;
                 HasSingleSource = SourceContainers.Count == 1;
 
                 // This will trigger OnSelectedSourceContainerChanged, which populates the video, audio, and subtitle drop-downs.
                 SelectedSourceContainer = SourceContainers[0];
+            }
+            else
+            {
+                SourceContainers = null;
+                HasMultipleSources = false;
+                HasSingleSource = false;
+                SelectedSourceContainer = null;
             }
 
             TagLine = Item.Taglines is not null && Item.Taglines.Count > 0 ? Item.Taglines[0] : null;
@@ -267,17 +278,52 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
     partial void OnSelectedSourceContainerChanged(MediaSourceInfoWrapper? value)
     {
-        if (value is not null)
+        if (value is null)
+        {
+            return;
+        }
+
+        try
         {
             DetermineVideoOptions(value.Value);
             DetermineAudioOptions(value.Value);
             DetermineSubtitleOptions(value.Value);
         }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in OnSelectedSourceContainerChanged: {ex}");
+        }
+    }
+
+    private void ResetDisplayState()
+    {
+        SourceContainers = null;
+        HasMultipleSources = false;
+        HasSingleSource = false;
+        SelectedSourceContainer = null;
+        VideoStreams = null;
+        SelectedVideoStream = null;
+        AudioStreams = null;
+        SelectedAudioStream = null;
+        HasMultipleAudioStreams = false;
+        HasSingleAudioStream = false;
+        SubtitleStreams = null;
+        SelectedSubtitleStream = null;
+        HasMultipleSubtitleStreams = false;
+        HasSingleSubtitleStream = false;
+        Sections = null;
     }
 
     private void DetermineVideoOptions(MediaSourceInfo mediaSourceInfo)
     {
-        List<MediaStream> videoStreams = mediaSourceInfo.MediaStreams!
+        if (mediaSourceInfo.MediaStreams is null)
+        {
+            VideoStreams = [];
+            SelectedVideoStream = null;
+            return;
+        }
+
+        List<MediaStream> videoStreams = mediaSourceInfo.MediaStreams
             .Where(s => s.Type == MediaStream_Type.Video)
             .OrderBy(s => s, MediaStreamComparer.Instance)
             .ToList();
@@ -309,7 +355,16 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
     private void DetermineAudioOptions(MediaSourceInfo mediaSourceInfo)
     {
-        List<MediaStream> audioStreams = mediaSourceInfo.MediaStreams!
+        if (mediaSourceInfo.MediaStreams is null)
+        {
+            AudioStreams = [];
+            HasMultipleAudioStreams = false;
+            HasSingleAudioStream = false;
+            SelectedAudioStream = null;
+            return;
+        }
+
+        List<MediaStream> audioStreams = mediaSourceInfo.MediaStreams
             .Where(s => s.Type == MediaStream_Type.Audio)
             .OrderBy(s => s, MediaStreamComparer.Instance)
             .ToList();
@@ -337,7 +392,16 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
     private void DetermineSubtitleOptions(MediaSourceInfo mediaSourceInfo)
     {
-        List<MediaStream> subtitleStreams = mediaSourceInfo.MediaStreams!
+        if (mediaSourceInfo.MediaStreams is null)
+        {
+            SubtitleStreams = [MediaStreamOption.SubtitlesOff];
+            HasMultipleSubtitleStreams = false;
+            HasSingleSubtitleStream = true;
+            SelectedSubtitleStream = MediaStreamOption.SubtitlesOff;
+            return;
+        }
+
+        List<MediaStream> subtitleStreams = mediaSourceInfo.MediaStreams
             .Where(s => s.Type == MediaStream_Type.Subtitle)
             .OrderBy(s => s, MediaStreamComparer.Instance)
             .ToList();
