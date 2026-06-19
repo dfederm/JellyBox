@@ -14,6 +14,7 @@ internal sealed partial class MainPage : Page
 {
     private FrameworkElement? _lastFocusedElement;
     private bool _ignoreNextQuerySubmitted;
+    private bool _suppressSearchTextSync;
 
     public MainPage()
     {
@@ -118,11 +119,14 @@ internal sealed partial class MainPage : Page
 
     private void OnSearchPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(ShellSearchViewModel.Query)
-            && SearchBox.Text != ViewModel.Search.Query)
+        if (_suppressSearchTextSync
+            || e.PropertyName is not nameof(ShellSearchViewModel.Query)
+            || SearchBox.Text == ViewModel.Search.Query)
         {
-            SearchBox.Text = ViewModel.Search.Query;
+            return;
         }
+
+        SearchBox.Text = ViewModel.Search.Query;
     }
 
     private void SearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
@@ -143,7 +147,7 @@ internal sealed partial class MainPage : Page
 
         if (args.ChosenSuggestion is SearchSuggestion suggestion)
         {
-            ViewModel.Search.OpenSuggestion(suggestion);
+            OpenSearchSuggestion(suggestion);
             return;
         }
 
@@ -154,9 +158,30 @@ internal sealed partial class MainPage : Page
     {
         if (args.SelectedItem is SearchSuggestion suggestion)
         {
-            _ignoreNextQuerySubmitted = true;
-            ViewModel.Search.OpenSuggestion(suggestion);
+            OpenSearchSuggestion(suggestion);
         }
+    }
+
+    private void OpenSearchSuggestion(SearchSuggestion suggestion)
+    {
+        _ignoreNextQuerySubmitted = true;
+        ViewModel.Search.PrepareSuggestionNavigation();
+        ViewModel.Search.ClearSuggestions();
+
+        _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+        {
+            _suppressSearchTextSync = true;
+            try
+            {
+                ViewModel.Search.SetQueryText(suggestion.DisplayText);
+                SearchBox.Text = suggestion.DisplayText;
+                ViewModel.Search.NavigateToItem(suggestion.ItemId);
+            }
+            finally
+            {
+                _suppressSearchTextSync = false;
+            }
+        });
     }
 
     internal sealed record Parameters(Action DeferredNavigationAction);
