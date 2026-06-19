@@ -24,13 +24,16 @@
                 MaxWidth="720"
                 HorizontalAlignment="Stretch"
                 PlaceholderText="Search movies and TV shows"
-                QueryIcon="Find"
+                TextMemberPath="DisplayText"
                 Style="{StaticResource SearchAutoSuggestBox}"
-                Text="{x:Bind ViewModel.Search.Query, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                 ItemsSource="{x:Bind ViewModel.Search.Suggestions, Mode=OneWay}"
+                TextChanged="SearchBox_TextChanged"
                 QuerySubmitted="SearchBox_QuerySubmitted"
                 SuggestionChosen="SearchBox_SuggestionChosen"
                 XYFocusKeyboardNavigation="Enabled">
+                <AutoSuggestBox.QueryIcon>
+                    <SymbolIcon Symbol="Find" />
+                </AutoSuggestBox.QueryIcon>
                 <AutoSuggestBox.ItemTemplate>
                     <DataTemplate x:DataType="models:SearchSuggestion">
                         <StackPanel Orientation="Horizontal" Spacing="12" Padding="4,10">
@@ -60,6 +63,8 @@
 
         <Grid
             x:Name="NavigationOverlay"
+            Grid.Row="0"
+            Grid.RowSpan="2"
             Visibility="Collapsed"
             XYFocusKeyboardNavigation="Enabled">
 

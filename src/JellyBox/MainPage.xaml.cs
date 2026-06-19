@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using JellyBox.Models;
 using JellyBox.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +20,7 @@ internal sealed partial class MainPage : Page
 
         ViewModel = AppServices.Instance.ServiceProvider.GetRequiredService<MainPageViewModel>();
         ViewModel.IsMenuOpenChanged += OnIsMenuOpenChanged;
+        ViewModel.Search.PropertyChanged += OnSearchPropertyChanged;
 
         // Cache the page state so the ContentFrame's BackStack can be preserved
         NavigationCacheMode = NavigationCacheMode.Required;
@@ -34,6 +36,7 @@ internal sealed partial class MainPage : Page
         Unloaded += (sender, e) =>
         {
             ContentFrame.Navigated -= ContentFrameNavigated;
+            ViewModel.Search.PropertyChanged -= OnSearchPropertyChanged;
         };
     }
 
@@ -110,6 +113,23 @@ internal sealed partial class MainPage : Page
     private void CloseNavigation(object sender, TappedRoutedEventArgs e)
     {
         ViewModel.CloseNavigationCommand.Execute(null);
+    }
+
+    private void OnSearchPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(ShellSearchViewModel.Query)
+            && SearchBox.Text != ViewModel.Search.Query)
+        {
+            SearchBox.Text = ViewModel.Search.Query;
+        }
+    }
+
+    private void SearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+        {
+            ViewModel.Search.Query = sender.Text ?? string.Empty;
+        }
     }
 
     private void SearchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)

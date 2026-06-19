@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using JellyBox.Models;
@@ -22,8 +23,7 @@ internal sealed partial class ShellSearchViewModel : ObservableObject
     [ObservableProperty]
     public partial string Query { get; set; } = string.Empty;
 
-    [ObservableProperty]
-    public partial IReadOnlyList<SearchSuggestion> Suggestions { get; set; } = [];
+    public ObservableCollection<SearchSuggestion> Suggestions { get; } = [];
 
     public ShellSearchViewModel(
         JellyfinApiClient jellyfinApiClient,
@@ -57,7 +57,7 @@ internal sealed partial class ShellSearchViewModel : ObservableObject
         string trimmed = query.Trim();
         if (trimmed.Length < MinimumQueryLength)
         {
-            Suggestions = [];
+            ReplaceSuggestions([]);
             return;
         }
 
@@ -86,7 +86,7 @@ internal sealed partial class ShellSearchViewModel : ObservableObject
 
             if (result?.SearchHints is null)
             {
-                Suggestions = [];
+                ReplaceSuggestions([]);
                 return;
             }
 
@@ -100,12 +100,21 @@ internal sealed partial class ShellSearchViewModel : ObservableObject
                 }
             }
 
-            Suggestions = suggestions;
+            ReplaceSuggestions(suggestions);
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Error in ShellSearchViewModel.UpdateSuggestionsAsync: {ex}");
-            Suggestions = [];
+            ReplaceSuggestions([]);
+        }
+    }
+
+    private void ReplaceSuggestions(IEnumerable<SearchSuggestion> suggestions)
+    {
+        Suggestions.Clear();
+        foreach (SearchSuggestion suggestion in suggestions)
+        {
+            Suggestions.Add(suggestion);
         }
     }
 
