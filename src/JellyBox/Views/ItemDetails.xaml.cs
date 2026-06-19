@@ -32,7 +32,14 @@ internal sealed partial class ItemDetails : Page
 
     internal ItemDetailsViewModel ViewModel { get; }
 
-    protected override void OnNavigatedTo(NavigationEventArgs e) => ViewModel.HandleParameters((Parameters)e.Parameter);
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        _hasFocusedInitial = false;
+        _lastNavigationDirection = null;
+        ContentInfoPanel.LayoutUpdated -= ContentInfoPanel_LayoutUpdated;
+        ContentInfoPanel.LayoutUpdated += ContentInfoPanel_LayoutUpdated;
+        ViewModel.HandleParameters((Parameters)e.Parameter);
+    }
 
     internal sealed record Parameters(Guid ItemId);
 
