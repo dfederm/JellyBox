@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
   <PropertyGroup>
+    <!-- Pin CPM file location for Visual Studio (nested project under src/) -->
+    <DirectoryPackagesPropsPath>$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildProjectDirectory)'))</DirectoryPackagesPropsPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <!-- Be strict with warnings -->
     <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

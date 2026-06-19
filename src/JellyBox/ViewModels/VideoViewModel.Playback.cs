@@ -21,6 +21,7 @@ internal sealed partial class VideoViewModel
         {
             _transportControls = transportControls;
             _currentItem = parameters.Item;
+            _cachedMaxStreamingBitrate = null;
             BaseItemDto item = _currentItem;
             _playerElement = playerElement;
 
@@ -223,7 +224,7 @@ internal sealed partial class VideoViewModel
         }
 
         // Get playback info with current track selections
-        (MediaSourceInfo? mediaSourceInfo, string? playSessionId) = await GetPlaybackInfoAsync(
+        (MediaSourceInfo? mediaSourceInfo, string? playSessionId) = await GetPlaybackInfoForPlaybackAsync(
             _currentItem.Id!.Value,
             mediaSourceId,
             _playbackProgressInfo.AudioStreamIndex,

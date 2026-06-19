@@ -1,10 +1,13 @@
 using System.Diagnostics;
+using System.Net.Http;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Jellyfin.Sdk.Generated.Models;
 using Microsoft.Kiota.Abstractions;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Media.Streaming.Adaptive;
 using Windows.Security.ExchangeActiveSyncProvisioning;
+using Windows.Storage.Streams;
 
 namespace JellyBox.ViewModels;
 
@@ -12,6 +15,43 @@ namespace JellyBox.ViewModels;
 internal sealed partial class VideoViewModel
 #pragma warning restore CA1812
 {
+    /// <summary>
+    /// Fetches playback info, preferring direct play when subtitles can be rendered client-side.
+    /// </summary>
+    private async Task<(MediaSourceInfo? MediaSource, string? PlaySessionId)> GetPlaybackInfoForPlaybackAsync(
+        Guid itemId,
+        string? mediaSourceId,
+        int? audioStreamIndex,
+        int? subtitleStreamIndex,
+        long? startTimeTicks)
+    {
+        if (subtitleStreamIndex is >= 0)
+        {
+            (MediaSourceInfo? mediaSource, string? playSessionId) = await GetPlaybackInfoAsync(
+                itemId,
+                mediaSourceId,
+                audioStreamIndex,
+                subtitleStreamIndex: null,
+                startTimeTicks);
+
+            if (mediaSource is not null
+                && CanRenderSubtitleClientSide(mediaSource, subtitleStreamIndex.Value)
+                && (mediaSource.SupportsDirectPlay.GetValueOrDefault() || mediaSource.SupportsDirectStream.GetValueOrDefault()))
+            {
+                Debug.WriteLine(
+                    $"Using client-side subtitles (Jellyfin index {subtitleStreamIndex.Value}); omitting subtitle index from playback request to avoid remux/transcode.");
+                return (mediaSource, playSessionId);
+            }
+        }
+
+        return await GetPlaybackInfoAsync(
+            itemId,
+            mediaSourceId,
+            audioStreamIndex,
+            subtitleStreamIndex,
+            startTimeTicks);
+    }
+
     /// <summary>
     /// Fetches playback info from the Jellyfin API.
     /// </summary>
@@ -45,6 +85,14 @@ internal sealed partial class VideoViewModel
         }
 
         return (response.MediaSources[0], response.PlaySessionId);
+    }
+
+    private static bool CanRenderSubtitleClientSide(MediaSourceInfo mediaSource, int subtitleStreamIndex)
+    {
+        MediaStream? stream = mediaSource.MediaStreams?
+            .FirstOrDefault(s => s.Type == MediaStream_Type.Subtitle && s.Index == subtitleStreamIndex);
+
+        return stream is not null && IsSubtitleFormatSupported(stream);
     }
 
     /// <summary>
@@ -99,8 +147,8 @@ internal sealed partial class VideoViewModel
 
         MediaSource mediaSource = await CreateMediaSourceAsync(mediaUri, isAdaptive);
 
-        // Add all external subtitles upfront for seamless switching
-        AddAllExternalSubtitles(mediaSource, mediaSourceInfo);
+        // Only load the selected external subtitle. Loading every track upfront causes extra network I/O and parsing.
+        await AddSelectedExternalSubtitleAsync(mediaSource, mediaSourceInfo);
 
         MediaPlaybackItem? playbackItem = new(mediaSource, startPosition);
 
@@ -117,49 +165,85 @@ internal sealed partial class VideoViewModel
     }
 
     /// <summary>
-    /// Adds all external subtitles in supported formats to the media source for seamless switching.
+    /// Adds the selected external subtitle in a supported format.
     /// UWP TimedTextSource only supports SRT (subrip) and VTT formats.
-    /// External subtitles are added in the same order as they appear in MediaStreams.
     /// </summary>
-    private void AddAllExternalSubtitles(MediaSource mediaSource, MediaSourceInfo mediaSourceInfo)
+    private async Task AddSelectedExternalSubtitleAsync(MediaSource mediaSource, MediaSourceInfo mediaSourceInfo)
     {
         if (mediaSourceInfo.MediaStreams is null)
         {
             return;
         }
 
-        foreach (MediaStream subtitleTrack in mediaSourceInfo.MediaStreams
-            .Where(s => s.Type == MediaStream_Type.Subtitle && s.IsExternal.GetValueOrDefault()))
+        int? selectedSubtitleIndex = _playbackProgressInfo?.SubtitleStreamIndex;
+        if (selectedSubtitleIndex is not >= 0)
         {
-            if (!IsSubtitleFormatSupported(subtitleTrack))
-            {
-                Debug.WriteLine($"Skipping unsupported external subtitle format: {subtitleTrack.Codec} (index {subtitleTrack.Index})");
-                continue;
-            }
-
-            string? subtitleUrl = subtitleTrack.DeliveryUrl;
-            if (string.IsNullOrEmpty(subtitleUrl))
-            {
-                Debug.WriteLine($"Subtitle track {subtitleTrack.Index} has no delivery URL.");
-                continue;
-            }
-
-            if (!subtitleTrack.IsExternalUrl.GetValueOrDefault())
-            {
-                subtitleUrl = _sdkClientSettings.ServerUrl + subtitleUrl;
-            }
-
-            if (Uri.TryCreate(subtitleUrl, UriKind.Absolute, out Uri? subtitleUri))
-            {
-                TimedTextSource timedTextSource = TimedTextSource.CreateFromUri(subtitleUri);
-                mediaSource.ExternalTimedTextSources.Add(timedTextSource);
-                Debug.WriteLine($"Added external subtitle (index {subtitleTrack.Index}): {subtitleUri}");
-            }
-            else
-            {
-                Debug.WriteLine($"Failed to parse subtitle URL: {subtitleUrl}");
-            }
+            return;
         }
+
+        MediaStream? subtitleTrack = mediaSourceInfo.MediaStreams
+            .FirstOrDefault(s => s.Type == MediaStream_Type.Subtitle
+                && s.IsExternal.GetValueOrDefault()
+                && s.Index == selectedSubtitleIndex);
+
+        if (subtitleTrack is null)
+        {
+            return;
+        }
+
+        if (!IsSubtitleFormatSupported(subtitleTrack))
+        {
+            Debug.WriteLine($"Skipping unsupported external subtitle format: {subtitleTrack.Codec} (index {subtitleTrack.Index})");
+            return;
+        }
+
+        string? subtitleUrl = subtitleTrack.DeliveryUrl;
+        if (string.IsNullOrEmpty(subtitleUrl))
+        {
+            Debug.WriteLine($"Subtitle track {subtitleTrack.Index} has no delivery URL.");
+            return;
+        }
+
+        Uri subtitleUri = BuildAuthenticatedSubtitleUri(subtitleUrl, subtitleTrack.IsExternalUrl.GetValueOrDefault());
+
+        try
+        {
+            HttpClient client = _httpClientFactory.CreateClient("Jellyfin");
+            using HttpResponseMessage response = await client.GetAsync(subtitleUri);
+            response.EnsureSuccessStatusCode();
+
+            byte[] bytes = await response.Content.ReadAsByteArrayAsync();
+#pragma warning disable CA2000 // MediaSource owns the stream for the lifetime of playback.
+            InMemoryRandomAccessStream stream = new();
+#pragma warning restore CA2000
+            await stream.WriteAsync(bytes.AsBuffer());
+            stream.Seek(0);
+
+            TimedTextSource timedTextSource = TimedTextSource.CreateFromStream(stream, subtitleTrack.Language ?? string.Empty);
+            mediaSource.ExternalTimedTextSources.Add(timedTextSource);
+            Debug.WriteLine($"Added external subtitle from stream (index {subtitleTrack.Index}): {subtitleUri}");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to download subtitle stream, falling back to URI: {ex.Message}");
+            TimedTextSource timedTextSource = TimedTextSource.CreateFromUri(subtitleUri);
+            mediaSource.ExternalTimedTextSources.Add(timedTextSource);
+        }
+    }
+
+    private Uri BuildAuthenticatedSubtitleUri(string subtitleUrl, bool isExternalUrl)
+    {
+        string url = isExternalUrl ? subtitleUrl : _sdkClientSettings.ServerUrl + subtitleUrl;
+        Uri uri = new(url);
+
+        if (string.IsNullOrEmpty(_sdkClientSettings.AccessToken)
+            || uri.Query.Contains("api_key=", StringComparison.OrdinalIgnoreCase))
+        {
+            return uri;
+        }
+
+        string separator = string.IsNullOrEmpty(uri.Query) ? "?" : "&";
+        return new Uri($"{uri.AbsoluteUri}{separator}api_key={_sdkClientSettings.AccessToken}");
     }
 
     private Uri? BuildMediaUri(MediaSourceInfo mediaSourceInfo)
@@ -199,6 +283,11 @@ internal sealed partial class VideoViewModel
 
     private async Task<int> DetectBitrateAsync()
     {
+        if (_cachedMaxStreamingBitrate.HasValue)
+        {
+            return _cachedMaxStreamingBitrate.Value;
+        }
+
         const int BitrateTestSize = 1024 * 1024; // 1MB
         const int DownloadChunkSize = 64 * 1024; // 64KB
         const double SafetyRatio = 0.8; // Only allow 80% of the detected bitrate to avoid buffering.
@@ -236,6 +325,7 @@ internal sealed partial class VideoViewModel
         double bytesPerSecond = totalBytesRead / responseTimeSeconds;
         int bitrate = (int)Math.Round(bytesPerSecond * 8 * SafetyRatio);
         Debug.WriteLine($"Downloaded {totalBytesRead} bytes in {responseTimeSeconds:F2}s. Using max bitrate of {bitrate}");
+        _cachedMaxStreamingBitrate = bitrate;
         return bitrate;
     }
 }

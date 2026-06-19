@@ -39,36 +39,45 @@
     <PackageReference Include="Microsoft.Web.WebView2" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.Uwp.Managed" />
   </ItemGroup>
+
+  <!-- Fallback when Nerdbank.GitVersioning targets are not yet restored (e.g. first VS load) -->
+  <Target Name="EnsureBuildVersion" BeforeTargets="SetAppxManifestVersion">
+    <PropertyGroup Condition="'$(BuildVersion)' == ''">
+      <BuildVersion>0.1.0.0</BuildVersion>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="SetAppxManifestVersion"
           BeforeTargets="PrepareForBuild"
-          DependsOnTargets="GetBuildVersion">
-    <ItemGroup>
-      <_OriginalAppxManifest Include="@(AppxManifest)" />
-      <AppxManifest Remove="@(AppxManifest)" />
-      <AppxManifest Include="@(_OriginalAppxManifest -> '$(IntermediateOutputPath)%(Filename)%(Extension)')" />
-    </ItemGroup>
+          DependsOnTargets="EnsureBuildVersion"
+          Condition="Exists('$(MSBuildProjectDirectory)\Package.appxmanifest')">
+    <PropertyGroup>
+      <_AppxManifestSource>$(MSBuildProjectDirectory)\Package.appxmanifest</_AppxManifestSource>
+      <_AppxManifestIntermediate>$(IntermediateOutputPath)Package.appxmanifest</_AppxManifestIntermediate>
+      <AppxManifestNamespaces>
+        <Namespace Prefix="dn" Uri="http://schemas.microsoft.com/appx/manifest/foundation/windows10" />
+        <Namespace Prefix="mp" Uri="http://schemas.microsoft.com/appx/2014/phone/manifest" />
+        <Namespace Prefix="uap" Uri="http://schemas.microsoft.com/appx/manifest/uap/windows10" />
+        <Namespace Prefix="rescap" Uri="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" />
+      </AppxManifestNamespaces>
+    </PropertyGroup>
+    <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
     <Copy
-      SourceFiles="@(_OriginalAppxManifest)"
-      DestinationFiles="@(AppxManifest)"
+      SourceFiles="$(_AppxManifestSource)"
+      DestinationFiles="$(_AppxManifestIntermediate)"
       SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
       OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
       Retries="$(CopyRetryCount)"
       RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
-      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)"
-      />
-    <PropertyGroup>
-      <AppxManifestNamespaces>
-          <Namespace Prefix="dn" Uri="http://schemas.microsoft.com/appx/manifest/foundation/windows10" />
-          <Namespace Prefix="mp" Uri="http://schemas.microsoft.com/appx/2014/phone/manifest" />
-          <Namespace Prefix="uap" Uri="http://schemas.microsoft.com/appx/manifest/uap/windows10" />
-          <Namespace Prefix="rescap" Uri="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" />
-      </AppxManifestNamespaces>
-    </PropertyGroup>
+      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)" />
+    <ItemGroup>
+      <AppxManifest Remove="@(AppxManifest)" />
+      <AppxManifest Include="$(_AppxManifestIntermediate)" />
+    </ItemGroup>
     <XmlPoke
-      XmlInputPath="@(AppxManifest)"
+      XmlInputPath="$(_AppxManifestIntermediate)"
       Value="$(BuildVersion)"
       Query="/dn:Package/dn:Identity/@Version"
-      Namespaces="$(AppxManifestNamespaces)"
-      />
-    </Target>
+      Namespaces="$(AppxManifestNamespaces)" />
+  </Target>
 </Project>

@@ -90,11 +90,16 @@ internal sealed partial class VideoViewModel
 
     private void OnTimedMetadataTracksChanged(MediaPlaybackItem sender, IVectorChangedEventArgs args)
     {
+        if (args.CollectionChange != CollectionChange.ItemInserted)
+        {
+            return;
+        }
+
         // Capture the sender reference for use in the dispatcher callback
         MediaPlaybackItem playbackItem = sender;
 
         _ = CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
-            CoreDispatcherPriority.Normal,
+            CoreDispatcherPriority.Low,
             () =>
             {
                 try
@@ -105,19 +110,41 @@ internal sealed partial class VideoViewModel
                         return;
                     }
 
-                    // Present the selected subtitle track if one is selected
-                    int selectedIndex = _playbackProgressInfo?.SubtitleStreamIndex ?? -1;
-                    int? uwpIndex = GetSubtitleUwpIndex(selectedIndex);
-                    if (uwpIndex.HasValue && uwpIndex.Value < playbackItem.TimedMetadataTracks.Count)
-                    {
-                        playbackItem.TimedMetadataTracks.SetPresentationMode((uint)uwpIndex.Value, TimedMetadataTrackPresentationMode.PlatformPresented);
-                    }
+                    PresentSelectedSubtitleTrack(playbackItem);
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Error in OnTimedMetadataTracksChanged: {ex}");
                 }
             });
+    }
+
+    private void PresentSelectedSubtitleTrack(MediaPlaybackItem playbackItem)
+    {
+        int selectedIndex = _playbackProgressInfo?.SubtitleStreamIndex ?? -1;
+        if (selectedIndex < 0)
+        {
+            for (uint i = 0; i < playbackItem.TimedMetadataTracks.Count; i++)
+            {
+                playbackItem.TimedMetadataTracks.SetPresentationMode(i, TimedMetadataTrackPresentationMode.Disabled);
+            }
+
+            return;
+        }
+
+        int? uwpIndex = GetSubtitleUwpIndex(selectedIndex);
+        if (!uwpIndex.HasValue || uwpIndex.Value >= playbackItem.TimedMetadataTracks.Count)
+        {
+            return;
+        }
+
+        for (uint i = 0; i < playbackItem.TimedMetadataTracks.Count; i++)
+        {
+            var mode = i == uwpIndex.Value
+                ? TimedMetadataTrackPresentationMode.PlatformPresented
+                : TimedMetadataTrackPresentationMode.Disabled;
+            playbackItem.TimedMetadataTracks.SetPresentationMode(i, mode);
+        }
     }
 
     /// <summary>
@@ -162,15 +189,7 @@ internal sealed partial class VideoViewModel
 
         if (canSeamlessSwitch)
         {
-            // Set each track's presentation mode in a single pass
-            for (uint i = 0; i < _currentPlaybackItem!.TimedMetadataTracks.Count; i++)
-            {
-                var mode = i == track.UwpTrackIndex
-                    ? TimedMetadataTrackPresentationMode.PlatformPresented
-                    : TimedMetadataTrackPresentationMode.Disabled;
-                _currentPlaybackItem.TimedMetadataTracks.SetPresentationMode(i, mode);
-            }
-
+            PresentSelectedSubtitleTrack(_currentPlaybackItem!);
             Debug.WriteLine(track.UwpTrackIndex.HasValue
                 ? $"Seamless subtitle switch to Jellyfin index {track.JellyfinIndex} (UWP index {track.UwpTrackIndex})"
                 : "Subtitles disabled");

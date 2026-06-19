@@ -3,6 +3,7 @@ using JellyBox.Controls;
 using JellyBox.Services;
 using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
+using System.Net.Http;
 using Windows.Media.Playback;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -14,6 +15,7 @@ internal sealed partial class VideoViewModel : ObservableObject
 #pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
     private readonly JellyfinApiClient _jellyfinApiClient;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly JellyfinImageResolver _imageResolver;
     private readonly JellyfinSdkSettings _sdkClientSettings;
     private readonly DeviceProfileManager _deviceProfileManager;
@@ -26,14 +28,17 @@ internal sealed partial class VideoViewModel : ObservableObject
     private MediaPlaybackItem? _currentPlaybackItem;
     private double _volumeBeforeMute = 1.0;
     private bool _isDirectPlay;
+    private int? _cachedMaxStreamingBitrate;
 
     public VideoViewModel(
         JellyfinApiClient jellyfinApiClient,
+        IHttpClientFactory httpClientFactory,
         JellyfinImageResolver imageResolver,
         JellyfinSdkSettings sdkClientSettings,
         DeviceProfileManager deviceProfileManager)
     {
         _jellyfinApiClient = jellyfinApiClient;
+        _httpClientFactory = httpClientFactory;
         _imageResolver = imageResolver;
         _sdkClientSettings = sdkClientSettings;
         _deviceProfileManager = deviceProfileManager;
