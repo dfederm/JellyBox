@@ -47,8 +47,15 @@ internal sealed partial class ShellSearchViewModel : ObservableObject
         _navigationManager.NavigateToSearch(trimmed);
     }
 
-    public void SelectSuggestion(SearchSuggestion suggestion)
-        => _navigationManager.NavigateToItem(suggestion.ItemId);
+    public void OpenSuggestion(SearchSuggestion suggestion)
+    {
+        Interlocked.Increment(ref _searchVersion);
+        ClearSuggestions();
+        Query = suggestion.DisplayText;
+        _navigationManager.NavigateToItem(suggestion.ItemId);
+    }
+
+    public void ClearSuggestions() => ReplaceSuggestions([]);
 
     private async Task UpdateSuggestionsAsync(string query)
     {

@@ -13,6 +13,7 @@ namespace JellyBox;
 internal sealed partial class MainPage : Page
 {
     private FrameworkElement? _lastFocusedElement;
+    private bool _ignoreNextQuerySubmitted;
 
     public MainPage()
     {
@@ -134,9 +135,15 @@ internal sealed partial class MainPage : Page
 
     private void SearchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
+        if (_ignoreNextQuerySubmitted)
+        {
+            _ignoreNextQuerySubmitted = false;
+            return;
+        }
+
         if (args.ChosenSuggestion is SearchSuggestion suggestion)
         {
-            ViewModel.Search.SelectSuggestion(suggestion);
+            ViewModel.Search.OpenSuggestion(suggestion);
             return;
         }
 
@@ -147,7 +154,8 @@ internal sealed partial class MainPage : Page
     {
         if (args.SelectedItem is SearchSuggestion suggestion)
         {
-            ViewModel.Search.SelectSuggestion(suggestion);
+            _ignoreNextQuerySubmitted = true;
+            ViewModel.Search.OpenSuggestion(suggestion);
         }
     }
 

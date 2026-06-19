@@ -28,6 +28,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
     private readonly JellyfinImageResolver _imageResolver;
     private readonly NavigationManager _navigationManager;
     private readonly CardFactory _cardFactory;
+    private int _loadVersion;
 
     [ObservableProperty]
     public partial BaseItemDto? Item { get; set; }
@@ -145,11 +146,24 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
     internal async void HandleParameters(ItemDetails.Parameters parameters)
     {
+        int version = Interlocked.Increment(ref _loadVersion);
+
         try
         {
-            Item = await _jellyfinApiClient.Items[parameters.ItemId].GetAsync();
+            BaseItemDto? item = await _jellyfinApiClient.Items[parameters.ItemId].GetAsync();
+            if (version != _loadVersion)
+            {
+                return;
+            }
 
-            Name = Item!.Name;
+            if (item is null)
+            {
+                return;
+            }
+
+            Item = item;
+
+            Name = Item.Name;
 
             // Disable backdrop for Person and Book types because they only have primary images
             if (Item.Type is not BaseItemDto_Type.Person and not BaseItemDto_Type.Book)
@@ -232,6 +246,11 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             foreach (Task<Section?> sectionTask in sectionTasks)
             {
                 Section? section = await sectionTask;
+                if (version != _loadVersion)
+                {
+                    return;
+                }
+
                 if (section is not null)
                 {
                     sections.Add(section);
@@ -511,7 +530,18 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             return;
         }
 
-        IsPlayed = Item.UserData!.Played.GetValueOrDefault();
+        if (Item.UserData is null)
+        {
+            IsPlayed = false;
+            IsFavorite = false;
+            CanResume = false;
+            PlayButtonText = "Play";
+            PlayButtonGlyph = Glyphs.Play;
+            ResumePositionText = null;
+            return;
+        }
+
+        IsPlayed = Item.UserData.Played.GetValueOrDefault();
         IsFavorite = Item.UserData.IsFavorite.GetValueOrDefault();
 
         long positionTicks = Item.UserData.PlaybackPositionTicks.GetValueOrDefault();
