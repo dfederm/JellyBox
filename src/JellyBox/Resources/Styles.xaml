@@ -1011,11 +1011,7 @@
     <Style x:Key="SearchAutoSuggestBox" TargetType="AutoSuggestBox">
         <Setter Property="MinHeight" Value="48" />
         <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
-        <Setter Property="Background" Value="{StaticResource BackgroundElevated}" />
-        <Setter Property="BorderBrush" Value="{StaticResource BorderSubtle}" />
-        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="FontSize" Value="{StaticResource FontM}" />
-        <Setter Property="Padding" Value="12,10" />
         <Setter Property="UseSystemFocusVisuals" Value="True" />
         <Setter Property="FocusVisualPrimaryBrush" Value="{StaticResource FocusBorder}" />
         <Setter Property="FocusVisualSecondaryBrush" Value="Transparent" />
