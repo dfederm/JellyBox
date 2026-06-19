@@ -7,7 +7,9 @@ namespace JellyBox.Behaviors;
 /// <summary>
 /// Invokes the NavigateCommand on INavigable items when they are clicked in a ListViewBase control.
 /// </summary>
+#pragma warning disable CA1812 // Instantiated via XAML Interaction.Behaviors.
 internal sealed class ListViewBaseCommandBehavior : Behavior<ListViewBase>
+#pragma warning restore CA1812
 {
     protected override void OnAttached()
     {

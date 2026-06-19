@@ -64,6 +64,7 @@ internal sealed class AppServices
         serviceCollection.AddSingleton<DeviceProfileManager>();
         serviceCollection.AddSingleton<JellyfinImageResolver>();
         serviceCollection.AddSingleton<NavigationManager>();
+        serviceCollection.AddSingleton<ShellFocusCoordinator>();
 
         // View Models
         serviceCollection.AddTransient<HomeViewModel>();

@@ -9,7 +9,7 @@
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
     <DefaultLanguage>en-US</DefaultLanguage>
     <PublishAot>true</PublishAot>
-    <PublishProfile>win-$(Platform).pubxml</PublishProfile>
+    <PublishProfile Condition="'$(PublishProfile)' == '' and '$(Platform)' == 'x64'">win-x64.pubxml</PublishProfile>
     <DisableRuntimeMarshalling>true</DisableRuntimeMarshalling>
     <DisableEmbeddedXbf>true</DisableEmbeddedXbf>
     <EnableMsixTooling>true</EnableMsixTooling>
@@ -47,10 +47,7 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="SetAppxManifestVersion"
-          BeforeTargets="PrepareForBuild"
-          DependsOnTargets="EnsureBuildVersion"
-          Condition="Exists('$(MSBuildProjectDirectory)\Package.appxmanifest')">
+  <Target Name="SetAppxManifestVersion" BeforeTargets="PrepareForBuild" DependsOnTargets="EnsureBuildVersion" Condition="Exists('$(MSBuildProjectDirectory)\Package.appxmanifest')">
     <PropertyGroup>
       <_AppxManifestSource>$(MSBuildProjectDirectory)\Package.appxmanifest</_AppxManifestSource>
       <_AppxManifestIntermediate>$(IntermediateOutputPath)Package.appxmanifest</_AppxManifestIntermediate>
@@ -62,22 +59,11 @@
       </AppxManifestNamespaces>
     </PropertyGroup>
     <MakeDir Directories="$(IntermediateOutputPath)" Condition="!Exists('$(IntermediateOutputPath)')" />
-    <Copy
-      SourceFiles="$(_AppxManifestSource)"
-      DestinationFiles="$(_AppxManifestIntermediate)"
-      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
-      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
-      Retries="$(CopyRetryCount)"
-      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
-      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)" />
+    <Copy SourceFiles="$(_AppxManifestSource)" DestinationFiles="$(_AppxManifestIntermediate)" SkipUnchangedFiles="$(SkipCopyUnchangedFiles)" OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)" Retries="$(CopyRetryCount)" RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)" UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)" />
     <ItemGroup>
       <AppxManifest Remove="@(AppxManifest)" />
       <AppxManifest Include="$(_AppxManifestIntermediate)" />
     </ItemGroup>
-    <XmlPoke
-      XmlInputPath="$(_AppxManifestIntermediate)"
-      Value="$(BuildVersion)"
-      Query="/dn:Package/dn:Identity/@Version"
-      Namespaces="$(AppxManifestNamespaces)" />
+    <XmlPoke XmlInputPath="$(_AppxManifestIntermediate)" Value="$(BuildVersion)" Query="/dn:Package/dn:Identity/@Version" Namespaces="$(AppxManifestNamespaces)" />
   </Target>
 </Project>

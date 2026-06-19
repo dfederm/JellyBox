@@ -23,12 +23,14 @@
                 x:Name="SearchBox"
                 MaxWidth="720"
                 HorizontalAlignment="Stretch"
+                IsTabStop="False"
                 PlaceholderText="Search movies and TV shows"
                 Style="{StaticResource SearchAutoSuggestBox}"
                 ItemsSource="{x:Bind ViewModel.Search.Suggestions, Mode=OneWay}"
                 TextChanged="SearchBox_TextChanged"
                 QuerySubmitted="SearchBox_QuerySubmitted"
                 SuggestionChosen="SearchBox_SuggestionChosen"
+                LostFocus="SearchBox_LostFocus"
                 XYFocusKeyboardNavigation="Enabled">
                 <AutoSuggestBox.QueryIcon>
                     <SymbolIcon Symbol="Find" />

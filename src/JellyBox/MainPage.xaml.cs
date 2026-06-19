@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using JellyBox.Models;
+using JellyBox.Services;
 using JellyBox.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Windows.UI.Core;
@@ -15,10 +16,14 @@ internal sealed partial class MainPage : Page
     private FrameworkElement? _lastFocusedElement;
     private bool _ignoreNextQuerySubmitted;
     private bool _suppressSearchTextSync;
+    private readonly ShellFocusCoordinator _shellFocus;
 
     public MainPage()
     {
         InitializeComponent();
+
+        _shellFocus = AppServices.Instance.ServiceProvider.GetRequiredService<ShellFocusCoordinator>();
+        _shellFocus.RegisterSearchBox(SearchBox);
 
         ViewModel = AppServices.Instance.ServiceProvider.GetRequiredService<MainPageViewModel>();
         ViewModel.IsMenuOpenChanged += OnIsMenuOpenChanged;
@@ -107,9 +112,15 @@ internal sealed partial class MainPage : Page
             CoreDispatcherPriority.Normal,
             () =>
             {
+                _shellFocus.OnContentNavigated();
                 ViewModel.CloseNavigationCommand.Execute(null);
                 ViewModel.UpdateSelectedMenuItem();
             });
+    }
+
+    private void SearchBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        _shellFocus.OnSearchDismissed();
     }
 
     private void CloseNavigation(object sender, TappedRoutedEventArgs e)
