@@ -41,7 +41,8 @@
   </ItemGroup>
   <Target Name="SetAppxManifestVersion"
           BeforeTargets="PrepareForBuild"
-          DependsOnTargets="GetBuildVersion">
+          DependsOnTargets="GetBuildVersion"
+          Condition="'$(DesignTimeBuild)' != 'true' and '$(BuildingProject)' == 'true'">
     <ItemGroup>
       <_OriginalAppxManifest Include="@(AppxManifest)" />
       <AppxManifest Remove="@(AppxManifest)" />
