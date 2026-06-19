@@ -26,14 +26,18 @@ internal sealed partial class MainPageViewModel : ObservableObject
     [ObservableProperty]
     public partial ObservableCollection<NavigationViewItemBase>? NavigationItems { get; set; }
 
+    public ShellSearchViewModel Search { get; }
+
     public MainPageViewModel(
         AppSettings appSettings,
         JellyfinApiClient jellyfinApiClient,
-        NavigationManager navigationManager)
+        NavigationManager navigationManager,
+        ShellSearchViewModel shellSearchViewModel)
     {
         _appSettings = appSettings;
         _jellyfinApiClient = jellyfinApiClient;
         _navigationManager = navigationManager;
+        Search = shellSearchViewModel;
         _navigationManager.MenuOpenRequested += () => IsMenuOpen = true;
         _navigationManager.OpenNavigationMenu = () => IsMenuOpen = true;
         _navigationManager.ToggleNavigationMenu = () => IsMenuOpen = !IsMenuOpen;

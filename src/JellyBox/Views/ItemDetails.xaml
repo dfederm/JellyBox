@@ -63,7 +63,7 @@
             VerticalScrollBarVisibility="Hidden"
             BringIntoViewOnFocusChange="False"
             IsTabStop="False">
-            <Grid x:Name="ContentGrid" XYFocusKeyboardNavigation="Enabled" Margin="48,100,48,48">
+            <Grid x:Name="ContentGrid" XYFocusKeyboardNavigation="Enabled" Margin="48,24,48,48">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="380" />
                     <ColumnDefinition Width="*" />

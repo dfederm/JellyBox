@@ -16,6 +16,9 @@ internal sealed class NavigationManager
     // Fake item id used to identify the home page
     public static readonly Guid HomeId = new Guid("CDF95D47-90C2-4057-B12C-BA81C34F2CB9");
 
+    // Fake item id used to identify the search page
+    public static readonly Guid SearchId = new Guid("A4B8C2E1-6F3D-4A91-9B7E-2D5C8F1A3E64");
+
     public event Action? MenuOpenRequested;
 
     /// <summary>
@@ -94,6 +97,18 @@ internal sealed class NavigationManager
     {
         CurrentItem = HomeId;
         NavigateContentFrame<Home>();
+    }
+
+    public void NavigateToSearch(string query)
+    {
+        CurrentItem = SearchId;
+        NavigateContentFrame<Search>(new Search.Parameters(query));
+    }
+
+    public void NavigateToItem(Guid itemId)
+    {
+        CurrentItem = itemId;
+        NavigateContentFrame<ItemDetails>(new ItemDetails.Parameters(itemId));
     }
 
     public void NavigateToItem(BaseItemDto item)
