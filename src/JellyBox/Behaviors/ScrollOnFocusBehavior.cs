@@ -11,7 +11,9 @@ namespace JellyBox.Behaviors;
 /// Adjusts scroll position to keep focused items within the TV-safe zone.
 /// Supports both horizontal carousels and full grid layouts.
 /// </summary>
+#pragma warning disable CA1812 // Instantiated via XAML Interaction.Behaviors.
 internal sealed class ScrollOnFocusBehavior : Behavior<ListViewBase>
+#pragma warning restore CA1812
 {
     private ScrollViewer? _scrollViewer;
 

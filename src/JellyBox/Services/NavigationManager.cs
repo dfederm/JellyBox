@@ -114,31 +114,16 @@ internal sealed class NavigationManager
     public void NavigateToItem(BaseItemDto item)
     {
         Guid itemId = item.Id!.Value;
-        if (item.Type == BaseItemDto_Type.CollectionFolder)
-        {
-            switch (item.CollectionType)
-            {
-                case BaseItemDto_CollectionType.Movies:
-                {
-                    CurrentItem = itemId;
-                    NavigateContentFrame<Library>(new Library.Parameters(itemId, BaseItemKind.Movie, item.Name ?? "Movies"));
-                    return;
-                }
-                case BaseItemDto_CollectionType.Tvshows:
-                {
-                    CurrentItem = itemId;
-                    NavigateContentFrame<Library>(new Library.Parameters(itemId, BaseItemKind.Series, item.Name ?? "TV Shows"));
-                    return;
-                }
-            }
 
-            // TODO: Some kind of error message. Or genericize the collection view.
-        }
-        else
+        if (CollectionNavigation.TryCreateLibraryParameters(item, out Library.Parameters libraryParameters))
         {
             CurrentItem = itemId;
-            NavigateContentFrame<ItemDetails>(new ItemDetails.Parameters(itemId));
+            NavigateContentFrame<Library>(libraryParameters);
+            return;
         }
+
+        CurrentItem = itemId;
+        NavigateContentFrame<ItemDetails>(new ItemDetails.Parameters(itemId));
     }
 
     public void NavigateToPerson(BaseItemPerson person)
