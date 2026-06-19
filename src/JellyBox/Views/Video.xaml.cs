@@ -1,4 +1,5 @@
-﻿using JellyBox.ViewModels;
+﻿using JellyBox.Services;
+using JellyBox.ViewModels;
 using Jellyfin.Sdk.Generated.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Windows.System;
@@ -41,8 +42,10 @@ internal sealed partial class Video : Page
         object? focused = FocusManager.GetFocusedElement();
         bool hasControlFocus = focused is Control and not Page;
 
+        VirtualKey key = args.VirtualKey;
+
         // Handle Xbox controller and keyboard shortcuts
-        switch (args.VirtualKey)
+        switch (key)
         {
             // Controller: LB, Keyboard: J - Rewind 10 seconds
             case VirtualKey.GamepadLeftShoulder:
@@ -68,7 +71,17 @@ internal sealed partial class Video : Page
                 }
                 break;
 
-            // Controller: Menu, Keyboard: Space/K - Play/Pause
+            // Controller: A, Keyboard: Space/K - Play/Pause (when transport controls are not focused)
+            case VirtualKey.GamepadA:
+                if (!hasControlFocus)
+                {
+                    ViewModel.TogglePlayPause();
+                    args.Handled = true;
+                }
+
+                break;
+
+            // Controller: Menu - Play/Pause globally
             case VirtualKey.GamepadMenu:
                 ViewModel.TogglePlayPause();
                 args.Handled = true;
@@ -83,7 +96,8 @@ internal sealed partial class Video : Page
                 }
                 break;
 
-            // Keyboard: M - Toggle mute
+            // Controller: X, Keyboard: M - Toggle mute
+            case VirtualKey.GamepadX:
             case VirtualKey.M:
                 if (!hasControlFocus)
                 {
@@ -92,46 +106,38 @@ internal sealed partial class Video : Page
                 }
                 break;
 
-            // Keyboard: Up/Down arrow - Volume control (when not on a control)
-            case VirtualKey.Up:
+            default:
                 if (!hasControlFocus)
                 {
-                    ViewModel.AdjustVolume(0.1);
-                    args.Handled = true;
+                    if (GamepadInput.IsVolumeUpKey(key))
+                    {
+                        ViewModel.AdjustVolume(0.1);
+                        args.Handled = true;
+                    }
+                    else if (GamepadInput.IsVolumeDownKey(key))
+                    {
+                        ViewModel.AdjustVolume(-0.1);
+                        args.Handled = true;
+                    }
+                    else if (GamepadInput.IsSeekBackwardKey(key))
+                    {
+                        ViewModel.Rewind();
+                        args.Handled = true;
+                    }
+                    else if (GamepadInput.IsSeekForwardKey(key))
+                    {
+                        ViewModel.FastForward();
+                        args.Handled = true;
+                    }
                 }
-                break;
 
-            case VirtualKey.Down:
-                if (!hasControlFocus)
-                {
-                    ViewModel.AdjustVolume(-0.1);
-                    args.Handled = true;
-                }
                 break;
+        }
 
-            // Keyboard: Left/Right arrow - Seek (when not on a control)
-            case VirtualKey.Left:
-                if (!hasControlFocus)
-                {
-                    ViewModel.Rewind();
-                    args.Handled = true;
-                }
-                break;
-
-            case VirtualKey.Right:
-                if (!hasControlFocus)
-                {
-                    ViewModel.FastForward();
-                    args.Handled = true;
-                }
-                break;
-
-            // Keyboard: Escape - Go back
-            case VirtualKey.Escape:
-            case VirtualKey.GamepadB:
-                Frame.GoBack();
-                args.Handled = true;
-                break;
+        if (!args.Handled && GamepadInput.IsBackKey(key))
+        {
+            Frame.GoBack();
+            args.Handled = true;
         }
     }
 

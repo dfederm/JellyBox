@@ -115,7 +115,7 @@
                                                       Style="{StaticResource TransportButtonStyle}"
                                                       Label="Rewind"
                                                       Command="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=RewindCommand}"
-                                                      ToolTipService.ToolTip="Rewind 10 seconds (LB)"
+                                                      ToolTipService.ToolTip="Rewind 10 seconds (LB / D-pad left)"
                                                       XYFocusKeyboardNavigation="Enabled">
                                             <AppBarButton.Icon>
                                                 <FontIcon Glyph="&#xED3C;" FontFamily="Segoe MDL2 Assets" />
@@ -127,7 +127,7 @@
                                                       Style="{StaticResource TransportButtonStyle}"
                                                       Label="Play"
                                                       Command="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=PlayPauseCommand}"
-                                                      ToolTipService.ToolTip="Play/Pause (Space)"
+                                                      ToolTipService.ToolTip="Play/Pause (A / Menu / Space)"
                                                       XYFocusKeyboardNavigation="Enabled">
                                             <AppBarButton.Icon>
                                                 <FontIcon x:Name="CustomPlayPauseIcon" Glyph="&#xE768;" FontFamily="Segoe MDL2 Assets" />
@@ -139,7 +139,7 @@
                                                       Style="{StaticResource TransportButtonStyle}"
                                                       Label="Fast Forward"
                                                       Command="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=FastForwardCommand}"
-                                                      ToolTipService.ToolTip="Fast forward 30 seconds (RB)"
+                                                      ToolTipService.ToolTip="Fast forward 30 seconds (RB / D-pad right)"
                                                       XYFocusKeyboardNavigation="Enabled">
                                             <AppBarButton.Icon>
                                                 <FontIcon Glyph="&#xED3D;" FontFamily="Segoe MDL2 Assets" />
@@ -172,7 +172,7 @@
                                         <Button x:Name="CustomVolumeButton"
                                                 Style="{StaticResource TransportIconButtonStyle}"
                                                 Command="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ToggleMuteCommand}"
-                                                ToolTipService.ToolTip="Toggle mute (M)"
+                                                ToolTipService.ToolTip="Toggle mute (X / M)"
                                                 XYFocusKeyboardNavigation="Enabled">
                                             <FontIcon x:Name="CustomVolumeIcon" Glyph="&#xE767;" FontFamily="Segoe MDL2 Assets" />
                                             <Button.Flyout>
