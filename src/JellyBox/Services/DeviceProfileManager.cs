@@ -499,7 +499,6 @@ internal sealed class DeviceProfileManager
                 Protocol = TranscodingProfile_Protocol.Hls,
                 MaxAudioChannels = audioChannelCount.ToString(),
                 MinSegments = 1,
-                BreakOnNonKeyFrames = false,
                 EnableAudioVbrEncoding = false // TODO: ??? !appSettings.disableVbrAudio()
             });
 
@@ -626,7 +625,6 @@ internal sealed class DeviceProfileManager
                 Protocol = TranscodingProfile_Protocol.Hls,
                 MaxAudioChannels = audioChannelCount.ToString(),
                 MinSegments = 1,
-                BreakOnNonKeyFrames = false,
             });
         }
 

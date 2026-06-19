@@ -7,7 +7,7 @@
   <ItemGroup>
     <PackageVersion Include="Blurhash.Core" Version="4.0.0" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageVersion Include="Jellyfin.Sdk" Version="2025.10.21" />
+    <PackageVersion Include="Jellyfin.Sdk" Version="2026.6.19-unstable.202606190139" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.7" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.7" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.7" />
