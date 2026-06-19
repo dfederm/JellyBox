@@ -1,0 +1,131 @@
+using System.Diagnostics;
+using CommunityToolkit.Mvvm.ComponentModel;
+using JellyBox.Models;
+using JellyBox.Services;
+using Jellyfin.Sdk;
+using Jellyfin.Sdk.Generated.Models;
+
+namespace JellyBox.ViewModels;
+
+#pragma warning disable CA1812
+internal sealed partial class ShellSearchViewModel : ObservableObject
+#pragma warning restore CA1812
+{
+    private const int MinimumQueryLength = 2;
+    private const int SuggestionLimit = 8;
+    private static readonly TimeSpan DebounceDelay = TimeSpan.FromMilliseconds(350);
+
+    private readonly JellyfinApiClient _jellyfinApiClient;
+    private readonly NavigationManager _navigationManager;
+    private int _searchVersion;
+
+    [ObservableProperty]
+    public partial string Query { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial IReadOnlyList<SearchSuggestion> Suggestions { get; set; } = [];
+
+    public ShellSearchViewModel(
+        JellyfinApiClient jellyfinApiClient,
+        NavigationManager navigationManager)
+    {
+        _jellyfinApiClient = jellyfinApiClient;
+        _navigationManager = navigationManager;
+    }
+
+    partial void OnQueryChanged(string value) => _ = UpdateSuggestionsAsync(value);
+
+    public void SubmitQuery(string? query)
+    {
+        string trimmed = (query ?? Query).Trim();
+        if (trimmed.Length < MinimumQueryLength)
+        {
+            return;
+        }
+
+        Query = trimmed;
+        _navigationManager.NavigateToSearch(trimmed);
+    }
+
+    public void SelectSuggestion(SearchSuggestion suggestion)
+        => _navigationManager.NavigateToItem(suggestion.ItemId);
+
+    private async Task UpdateSuggestionsAsync(string query)
+    {
+        int version = Interlocked.Increment(ref _searchVersion);
+
+        string trimmed = query.Trim();
+        if (trimmed.Length < MinimumQueryLength)
+        {
+            Suggestions = [];
+            return;
+        }
+
+        try
+        {
+            await Task.Delay(DebounceDelay);
+
+            if (version != _searchVersion)
+            {
+                return;
+            }
+
+            SearchHintResult? result = await _jellyfinApiClient.Search.Hints.GetAsync(
+                parameters =>
+                {
+                    parameters.QueryParameters.SearchTerm = trimmed;
+                    parameters.QueryParameters.IncludeItemTypes = [BaseItemKind.Movie, BaseItemKind.Series];
+                    parameters.QueryParameters.IncludeMedia = true;
+                    parameters.QueryParameters.Limit = SuggestionLimit;
+                });
+
+            if (version != _searchVersion)
+            {
+                return;
+            }
+
+            if (result?.SearchHints is null)
+            {
+                Suggestions = [];
+                return;
+            }
+
+            List<SearchSuggestion> suggestions = new(result.SearchHints.Count);
+            foreach (SearchHint hint in result.SearchHints)
+            {
+                SearchSuggestion? suggestion = CreateSuggestion(hint);
+                if (suggestion is not null)
+                {
+                    suggestions.Add(suggestion);
+                }
+            }
+
+            Suggestions = suggestions;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error in ShellSearchViewModel.UpdateSuggestionsAsync: {ex}");
+            Suggestions = [];
+        }
+    }
+
+    private static SearchSuggestion? CreateSuggestion(SearchHint hint)
+    {
+        if (hint.Type is not (SearchHint_Type.Movie or SearchHint_Type.Series))
+        {
+            return null;
+        }
+
+        if (!hint.Id.HasValue || string.IsNullOrWhiteSpace(hint.Name))
+        {
+            return null;
+        }
+
+        string typeLabel = hint.Type == SearchHint_Type.Movie ? "Movie" : "TV Show";
+        string? secondaryText = hint.ProductionYear.HasValue
+            ? $"{typeLabel} · {hint.ProductionYear.Value}"
+            : typeLabel;
+
+        return new SearchSuggestion(hint.Name, secondaryText, hint.Id.Value);
+    }
+}

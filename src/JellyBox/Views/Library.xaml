@@ -18,7 +18,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header: Title + Toolbar -->
-        <StackPanel Grid.Row="0" Padding="48,24,48,0">
+        <StackPanel Grid.Row="0" Padding="48,16,48,0">
             <TextBlock
                 Text="{x:Bind ViewModel.Title, Mode=OneWay}"
                 FontSize="{StaticResource FontXL}"

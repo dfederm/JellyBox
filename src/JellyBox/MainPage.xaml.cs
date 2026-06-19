@@ -1,3 +1,4 @@
+using JellyBox.Models;
 using JellyBox.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Windows.UI.Core;
@@ -109,6 +110,25 @@ internal sealed partial class MainPage : Page
     private void CloseNavigation(object sender, TappedRoutedEventArgs e)
     {
         ViewModel.CloseNavigationCommand.Execute(null);
+    }
+
+    private void SearchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        if (args.ChosenSuggestion is SearchSuggestion suggestion)
+        {
+            ViewModel.Search.SelectSuggestion(suggestion);
+            return;
+        }
+
+        ViewModel.Search.SubmitQuery(args.QueryText);
+    }
+
+    private void SearchBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+    {
+        if (args.SelectedItem is SearchSuggestion suggestion)
+        {
+            ViewModel.Search.SelectSuggestion(suggestion);
+        }
     }
 
     internal sealed record Parameters(Action DeferredNavigationAction);

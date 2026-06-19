@@ -71,6 +71,8 @@ internal sealed class AppServices
         serviceCollection.AddTransient<LibraryViewModel>();
         serviceCollection.AddTransient<LoginViewModel>();
         serviceCollection.AddTransient<MainPageViewModel>();
+        serviceCollection.AddTransient<SearchViewModel>();
+        serviceCollection.AddTransient<ShellSearchViewModel>();
         serviceCollection.AddTransient<ServerSelectionViewModel>();
         serviceCollection.AddTransient<VideoViewModel>();
         serviceCollection.AddTransient<WebVideoViewModel>();

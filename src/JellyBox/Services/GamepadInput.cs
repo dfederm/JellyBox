@@ -10,7 +10,7 @@ namespace JellyBox.Services;
 internal static class GamepadInput
 {
     public static bool IsTextInputFocused()
-        => FocusManager.GetFocusedElement() is TextBox or PasswordBox;
+        => FocusManager.GetFocusedElement() is TextBox or PasswordBox or AutoSuggestBox;
 
     public static bool IsAcceptKey(VirtualKey key)
         => key is VirtualKey.Enter or VirtualKey.GamepadA or VirtualKey.Space;
