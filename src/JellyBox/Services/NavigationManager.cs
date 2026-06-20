@@ -1,5 +1,8 @@
+using System.Diagnostics;
 using JellyBox.Views;
+using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
+using Windows.ApplicationModel;
 using Windows.System;
 using Windows.UI.Core;
 using Windows.UI.Input;
@@ -43,6 +46,13 @@ internal sealed class NavigationManager
     private object? _currentAppParameter;
 
     private object? _currentContentParameter;
+
+    private readonly JellyfinApiClient _jellyfinApiClient;
+
+    public NavigationManager(JellyfinApiClient jellyfinApiClient)
+    {
+        _jellyfinApiClient = jellyfinApiClient;
+    }
 
     /// <summary>
     /// Gets the item associated with the current page.
@@ -105,13 +115,31 @@ internal sealed class NavigationManager
         NavigateContentFrame<Search>(new Search.Parameters(query));
     }
 
-    public void NavigateToItem(Guid itemId)
+    public void NavigateToItem(Guid itemId) => _ = NavigateToItemAsync(itemId);
+
+    public void NavigateToItem(BaseItemDto item) => NavigateToResolvedItem(item);
+
+    private async Task NavigateToItemAsync(Guid itemId)
     {
-        CurrentItem = itemId;
-        NavigateContentFrame<ItemDetails>(new ItemDetails.Parameters(itemId));
+        try
+        {
+            BaseItemDto? item = await _jellyfinApiClient.Items[itemId].GetAsync();
+            if (item is null)
+            {
+                return;
+            }
+
+            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
+                CoreDispatcherPriority.Normal,
+                () => NavigateToResolvedItem(item));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error in NavigationManager.NavigateToItemAsync: {ex}");
+        }
     }
 
-    public void NavigateToItem(BaseItemDto item)
+    private void NavigateToResolvedItem(BaseItemDto item)
     {
         Guid itemId = item.Id!.Value;
 
