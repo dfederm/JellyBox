@@ -19,8 +19,6 @@ internal sealed class NavigationManager
     // Fake item id used to identify the search page
     public static readonly Guid SearchId = new Guid("A4B8C2E1-6F3D-4A91-9B7E-2D5C8F1A3E64");
 
-    public event Action? MenuOpenRequested;
-
     /// <summary>
     /// Opens the shell navigation menu.
     /// </summary>
@@ -91,7 +89,7 @@ internal sealed class NavigationManager
 
     public void NavigateToLogin() => NavigateAppFrame<Login>();
 
-    public void RequestOpenMenu() => MenuOpenRequested?.Invoke();
+    public void RequestOpenMenu() => OpenNavigationMenu?.Invoke();
 
     public void NavigateToHome()
     {
@@ -102,7 +100,21 @@ internal sealed class NavigationManager
     public void NavigateToSearch(string query)
     {
         CurrentItem = SearchId;
-        NavigateContentFrame<Search>(new Search.Parameters(query));
+        Search.Parameters parameters = new(query);
+
+        if (_contentFrame is not null
+            && _contentFrame.CurrentSourcePageType == typeof(Search)
+            && Equals(_currentContentParameter, parameters))
+        {
+            if (_contentFrame.Content is Search searchPage)
+            {
+                searchPage.ViewModel.HandleParameters(parameters);
+            }
+
+            return;
+        }
+
+        NavigateContentFrame<Search>(parameters);
     }
 
     public void NavigateToItem(Guid itemId)
@@ -266,8 +278,7 @@ internal sealed class NavigationManager
             return;
         }
 
-        // Don't intercept navigation keys when a text input control has focus
-        if (FocusManager.GetFocusedElement() is TextBox or PasswordBox)
+        if (GamepadInput.IsTextInputFocused())
         {
             return;
         }
@@ -309,6 +320,7 @@ internal sealed class NavigationManager
     /// </summary>
     private void CoreWindowKeyDown(CoreWindow sender, KeyEventArgs e)
     {
+        // Shell shortcuts only apply inside MainPage content (login/video use app-frame pages).
         if (_contentFrame is null || GamepadInput.IsTextInputFocused())
         {
             return;
@@ -324,12 +336,6 @@ internal sealed class NavigationManager
         }
 
         if (GamepadInput.IsBackKey(key) && TryCloseNavigationMenu?.Invoke() == true)
-        {
-            e.Handled = true;
-            return;
-        }
-
-        if (key is VirtualKey.Escape && TryCloseNavigationMenu?.Invoke() == true)
         {
             e.Handled = true;
             return;

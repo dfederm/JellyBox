@@ -19,6 +19,7 @@ internal sealed partial class ShellSearchViewModel : ObservableObject
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly NavigationManager _navigationManager;
     private int _searchVersion;
+    private bool _suppressSuggestions;
 
     [ObservableProperty]
     public partial string Query { get; set; } = string.Empty;
@@ -33,7 +34,13 @@ internal sealed partial class ShellSearchViewModel : ObservableObject
         _navigationManager = navigationManager;
     }
 
-    partial void OnQueryChanged(string value) => _ = UpdateSuggestionsAsync(value);
+    partial void OnQueryChanged(string value)
+    {
+        if (!_suppressSuggestions)
+        {
+            _ = UpdateSuggestionsAsync(value);
+        }
+    }
 
     public void SubmitQuery(string? query)
     {
@@ -47,15 +54,21 @@ internal sealed partial class ShellSearchViewModel : ObservableObject
         _navigationManager.NavigateToSearch(trimmed);
     }
 
-    public void PrepareSuggestionNavigation()
-        => Interlocked.Increment(ref _searchVersion);
-
-    public void SetQueryText(string query) => Query = query;
-
-    public void NavigateToItem(Guid itemId)
-        => _navigationManager.NavigateToItem(itemId);
-
-    public void ClearSuggestions() => ReplaceSuggestions([]);
+    public void SelectSuggestion(SearchSuggestion suggestion)
+    {
+        _suppressSuggestions = true;
+        try
+        {
+            Interlocked.Increment(ref _searchVersion);
+            ReplaceSuggestions([]);
+            Query = suggestion.DisplayText;
+            _navigationManager.NavigateToItem(suggestion.ItemId);
+        }
+        finally
+        {
+            _suppressSuggestions = false;
+        }
+    }
 
     private async Task UpdateSuggestionsAsync(string query)
     {

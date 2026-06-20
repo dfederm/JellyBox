@@ -38,7 +38,6 @@ internal sealed partial class MainPageViewModel : ObservableObject
         _jellyfinApiClient = jellyfinApiClient;
         _navigationManager = navigationManager;
         Search = shellSearchViewModel;
-        _navigationManager.MenuOpenRequested += () => IsMenuOpen = true;
         _navigationManager.OpenNavigationMenu = () => IsMenuOpen = true;
         _navigationManager.ToggleNavigationMenu = () => IsMenuOpen = !IsMenuOpen;
         _navigationManager.TryCloseNavigationMenu = () =>

@@ -15,6 +15,7 @@ internal sealed partial class SearchViewModel : ObservableObject, ILoadingViewMo
 
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly CardFactory _cardFactory;
+    private int _loadVersion;
 
     [ObservableProperty]
     public partial bool IsLoading { get; set; }
@@ -42,17 +43,20 @@ internal sealed partial class SearchViewModel : ObservableObject, ILoadingViewMo
         _cardFactory = cardFactory;
     }
 
+    public void CancelLoading() => Interlocked.Increment(ref _loadVersion);
+
     public void HandleParameters(Search.Parameters parameters)
     {
+        int version = Interlocked.Increment(ref _loadVersion);
         Query = parameters.Query.Trim();
         ResultsTitle = $"Results for \"{Query}\"";
         Items = null;
         ShowEmptyState = false;
         ResultsSubtitle = null;
-        _ = LoadResultsAsync();
+        _ = LoadResultsAsync(version);
     }
 
-    private async Task LoadResultsAsync()
+    private async Task LoadResultsAsync(int version)
     {
         IsLoading = true;
 
@@ -69,6 +73,11 @@ internal sealed partial class SearchViewModel : ObservableObject, ILoadingViewMo
                 parameters.QueryParameters.ImageTypeLimit = 1;
                 parameters.QueryParameters.EnableImageTypes = [ImageType.Primary, ImageType.Backdrop, ImageType.Banner, ImageType.Thumb];
             });
+
+            if (version != _loadVersion)
+            {
+                return;
+            }
 
             if (result?.Items is null || result.Items.Count == 0)
             {
@@ -111,7 +120,10 @@ internal sealed partial class SearchViewModel : ObservableObject, ILoadingViewMo
         }
         finally
         {
-            IsLoading = false;
+            if (version == _loadVersion)
+            {
+                IsLoading = false;
+            }
         }
     }
 }

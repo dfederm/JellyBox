@@ -71,14 +71,20 @@ internal sealed partial class Video : Page
                 }
                 break;
 
-            // Controller: A / Menu, Keyboard: Space/K - Play/Pause
+            // Controller: A, Keyboard: Space/K - Play/Pause (when transport controls are not focused)
             case VirtualKey.GamepadA:
-            case VirtualKey.GamepadMenu:
-                if (!hasControlFocus || key is VirtualKey.GamepadMenu)
+                if (!hasControlFocus)
                 {
                     ViewModel.TogglePlayPause();
                     args.Handled = true;
                 }
+
+                break;
+
+            // Controller: Menu - Play/Pause globally
+            case VirtualKey.GamepadMenu:
+                ViewModel.TogglePlayPause();
+                args.Handled = true;
                 break;
 
             case VirtualKey.Space:

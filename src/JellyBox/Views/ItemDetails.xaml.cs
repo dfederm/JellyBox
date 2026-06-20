@@ -95,7 +95,7 @@ internal sealed partial class ItemDetails : Page
         {
             e.TryCancel();
 
-            // XY focus consumes the key even when cancelled, so MainPage.OnKeyDown never fires.
+            // XY focus consumes the key before NavigationManager can open the menu from left-edge input.
             // Open the nav menu directly for left-edge presses.
             if (e.Direction == FocusNavigationDirection.Left)
             {

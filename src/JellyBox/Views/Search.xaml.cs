@@ -18,5 +18,11 @@ internal sealed partial class Search : Page
     protected override void OnNavigatedTo(NavigationEventArgs e)
         => ViewModel.HandleParameters((Parameters)e.Parameter);
 
+    protected override void OnNavigatingFrom(NavigatingCancelEventArgs e)
+    {
+        ViewModel.CancelLoading();
+        base.OnNavigatingFrom(e);
+    }
+
     internal sealed record Parameters(string Query);
 }

@@ -165,17 +165,14 @@ internal sealed partial class MainPage : Page
     private void OpenSearchSuggestion(SearchSuggestion suggestion)
     {
         _ignoreNextQuerySubmitted = true;
-        ViewModel.Search.PrepareSuggestionNavigation();
-        ViewModel.Search.ClearSuggestions();
 
         _ = Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
         {
             _suppressSearchTextSync = true;
             try
             {
-                ViewModel.Search.SetQueryText(suggestion.DisplayText);
+                ViewModel.Search.SelectSuggestion(suggestion);
                 SearchBox.Text = suggestion.DisplayText;
-                ViewModel.Search.NavigateToItem(suggestion.ItemId);
             }
             finally
             {
