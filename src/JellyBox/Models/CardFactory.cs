@@ -68,7 +68,7 @@ internal sealed class CardFactory
             ImageWidth = imageWidth,
             ImageHeight = imageHeight,
             Image = image,
-            NavigateCommand = new RelayCommand(() => _navigationManager.NavigateToItem(item.Id!.Value)),
+            NavigateCommand = new RelayCommand(() => _navigationManager.NavigateToItem(item)),
             IsFavorite = item.UserData?.IsFavorite ?? false,
             IsPlayed = item.UserData?.Played ?? false,
             PlayedPercentage = item.UserData?.PlayedPercentage ?? 0,

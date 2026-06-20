@@ -1,5 +1,8 @@
+using System.Diagnostics;
 using JellyBox.Views;
+using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
+using Windows.ApplicationModel;
 using Windows.System;
 using Windows.UI.Core;
 using Windows.UI.Input;
@@ -43,6 +46,13 @@ internal sealed class NavigationManager
     private object? _currentAppParameter;
 
     private object? _currentContentParameter;
+
+    private readonly JellyfinApiClient _jellyfinApiClient;
+
+    public NavigationManager(JellyfinApiClient jellyfinApiClient)
+    {
+        _jellyfinApiClient = jellyfinApiClient;
+    }
 
     /// <summary>
     /// Gets the item associated with the current page.
@@ -105,40 +115,43 @@ internal sealed class NavigationManager
         NavigateContentFrame<Search>(new Search.Parameters(query));
     }
 
-    public void NavigateToItem(Guid itemId)
-    {
-        CurrentItem = itemId;
-        NavigateContentFrame<ItemDetails>(new ItemDetails.Parameters(itemId));
-    }
+    public void NavigateToItem(Guid itemId) => _ = NavigateToItemAsync(itemId);
 
-    public void NavigateToItem(BaseItemDto item)
+    public void NavigateToItem(BaseItemDto item) => NavigateToResolvedItem(item);
+
+    private async Task NavigateToItemAsync(Guid itemId)
     {
-        Guid itemId = item.Id!.Value;
-        if (item.Type == BaseItemDto_Type.CollectionFolder)
+        try
         {
-            switch (item.CollectionType)
+            BaseItemDto? item = await _jellyfinApiClient.Items[itemId].GetAsync();
+            if (item is null)
             {
-                case BaseItemDto_CollectionType.Movies:
-                {
-                    CurrentItem = itemId;
-                    NavigateContentFrame<Library>(new Library.Parameters(itemId, BaseItemKind.Movie, item.Name ?? "Movies"));
-                    return;
-                }
-                case BaseItemDto_CollectionType.Tvshows:
-                {
-                    CurrentItem = itemId;
-                    NavigateContentFrame<Library>(new Library.Parameters(itemId, BaseItemKind.Series, item.Name ?? "TV Shows"));
-                    return;
-                }
+                return;
             }
 
-            // TODO: Some kind of error message. Or genericize the collection view.
+            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
+                CoreDispatcherPriority.Normal,
+                () => NavigateToResolvedItem(item));
         }
-        else
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error in NavigationManager.NavigateToItemAsync: {ex}");
+        }
+    }
+
+    private void NavigateToResolvedItem(BaseItemDto item)
+    {
+        Guid itemId = item.Id!.Value;
+
+        if (CollectionNavigation.TryCreateLibraryParameters(item, out Library.Parameters libraryParameters))
         {
             CurrentItem = itemId;
-            NavigateContentFrame<ItemDetails>(new ItemDetails.Parameters(itemId));
+            NavigateContentFrame<Library>(libraryParameters);
+            return;
         }
+
+        CurrentItem = itemId;
+        NavigateContentFrame<ItemDetails>(new ItemDetails.Parameters(itemId));
     }
 
     public void NavigateToPerson(BaseItemPerson person)
