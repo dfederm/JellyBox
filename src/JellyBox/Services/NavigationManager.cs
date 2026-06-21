@@ -16,7 +16,20 @@ internal sealed class NavigationManager
     // Fake item id used to identify the home page
     public static readonly Guid HomeId = new Guid("CDF95D47-90C2-4057-B12C-BA81C34F2CB9");
 
-    public event Action? MenuOpenRequested;
+    /// <summary>
+    /// Opens the shell navigation menu.
+    /// </summary>
+    public Action? OpenNavigationMenu { get; set; }
+
+    /// <summary>
+    /// Toggles the shell navigation menu.
+    /// </summary>
+    public Action? ToggleNavigationMenu { get; set; }
+
+    /// <summary>
+    /// Closes the shell navigation menu when open. Returns true if the menu was closed.
+    /// </summary>
+    public Func<bool>? TryCloseNavigationMenu { get; set; }
 
     private Frame _appFrame = null!; // TODO
 
@@ -45,6 +58,7 @@ internal sealed class NavigationManager
 
         SystemNavigationManager.GetForCurrentView().BackRequested += BackRequested;
         Window.Current.CoreWindow.Dispatcher.AcceleratorKeyActivated += AcceleratorKeyActivated;
+        Window.Current.CoreWindow.KeyDown += CoreWindowKeyDown;
         Window.Current.CoreWindow.PointerPressed += PointerPressed;
     }
 
@@ -72,7 +86,7 @@ internal sealed class NavigationManager
 
     public void NavigateToLogin() => NavigateAppFrame<Login>();
 
-    public void RequestOpenMenu() => MenuOpenRequested?.Invoke();
+    public void RequestOpenMenu() => OpenNavigationMenu?.Invoke();
 
     public void NavigateToHome()
     {
@@ -235,8 +249,7 @@ internal sealed class NavigationManager
             return;
         }
 
-        // Don't intercept navigation keys when a text input control has focus
-        if (FocusManager.GetFocusedElement() is TextBox or PasswordBox)
+        if (GamepadInput.IsTextInputFocused())
         {
             return;
         }
@@ -250,9 +263,18 @@ internal sealed class NavigationManager
         bool onlyAlt = menuKey && !controlKey && !shiftKey;
         VirtualKey virtualKey = e.VirtualKey;
 
-        if ((virtualKey is VirtualKey.GoBack && noModifiers)
-            || (virtualKey is VirtualKey.Left && onlyAlt)
-            || (virtualKey is VirtualKey.Back && noModifiers))
+        if (GamepadInput.IsBackKey(virtualKey) && noModifiers)
+        {
+            if (TryCloseNavigationMenu?.Invoke() == true)
+            {
+                e.Handled = true;
+            }
+            else
+            {
+                e.Handled = GoBack();
+            }
+        }
+        else if (virtualKey is VirtualKey.Left && onlyAlt)
         {
             e.Handled = GoBack();
         }
@@ -260,6 +282,46 @@ internal sealed class NavigationManager
             || (virtualKey is VirtualKey.Right && onlyAlt))
         {
             e.Handled = GoForward();
+        }
+    }
+
+    /// <summary>
+    /// Global gamepad and keyboard shortcuts for the main app shell (home, library, details).
+    /// Full-screen pages such as video playback register their own handlers.
+    /// </summary>
+    private void CoreWindowKeyDown(CoreWindow sender, KeyEventArgs e)
+    {
+        // Shell shortcuts only apply inside MainPage content (login/video use app-frame pages).
+        if (_contentFrame is null || GamepadInput.IsTextInputFocused())
+        {
+            return;
+        }
+
+        VirtualKey key = e.VirtualKey;
+
+        if (GamepadInput.IsMenuToggleKey(key))
+        {
+            ToggleNavigationMenu?.Invoke();
+            e.Handled = true;
+            return;
+        }
+
+        if (GamepadInput.IsBackKey(key) && TryCloseNavigationMenu?.Invoke() == true)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        if (GamepadInput.IsNavigateRightKey(key) && TryCloseNavigationMenu?.Invoke() == true)
+        {
+            e.Handled = true;
+            return;
+        }
+
+        if (GamepadInput.IsNavigateLeftKey(key) && !FocusManager.TryMoveFocus(FocusNavigationDirection.Left))
+        {
+            OpenNavigationMenu?.Invoke();
+            e.Handled = true;
         }
     }
 

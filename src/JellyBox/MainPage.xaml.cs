@@ -1,6 +1,5 @@
 using JellyBox.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Windows.System;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -22,8 +21,6 @@ internal sealed partial class MainPage : Page
 
         // Cache the page state so the ContentFrame's BackStack can be preserved
         NavigationCacheMode = NavigationCacheMode.Required;
-
-        KeyDown += OnKeyDown;
 
         SlideInAnimation.Completed += SlideInCompleted;
 
@@ -112,88 +109,6 @@ internal sealed partial class MainPage : Page
     private void CloseNavigation(object sender, TappedRoutedEventArgs e)
     {
         ViewModel.CloseNavigationCommand.Execute(null);
-    }
-
-    /// <summary>
-    /// Keyboard and gamepad input handling.
-    /// Only handles commands and nav-menu-specific logic.
-    /// Directional focus movement is handled by XYFocusKeyboardNavigation in XAML.
-    /// </summary>
-    private void OnKeyDown(object sender, KeyRoutedEventArgs e)
-    {
-        // Don't intercept keys when a text input control has focus
-        if (FocusManager.GetFocusedElement() is TextBox or PasswordBox)
-        {
-            return;
-        }
-
-        switch (e.Key)
-        {
-            // Back gesture - close navigation if open
-            case VirtualKey.Back:
-            case VirtualKey.GamepadB:
-            {
-                if (ViewModel.IsMenuOpen)
-                {
-                    ViewModel.CloseNavigationCommand.Execute(null);
-                    e.Handled = true;
-                }
-
-                break;
-            }
-
-            // Toggle navigation menu
-            case VirtualKey.GamepadMenu:
-            case VirtualKey.GamepadView:
-            case VirtualKey.M:
-            {
-                ViewModel.ToggleNavigationCommand.Execute(null);
-                e.Handled = true;
-                break;
-            }
-
-            // Close navigation menu
-            case VirtualKey.Escape:
-            {
-                if (ViewModel.IsMenuOpen)
-                {
-                    ViewModel.CloseNavigationCommand.Execute(null);
-                    e.Handled = true;
-                }
-
-                break;
-            }
-
-            // Right closes nav menu when open
-            case VirtualKey.Right:
-            case VirtualKey.GamepadDPadRight:
-            case VirtualKey.GamepadLeftThumbstickRight:
-            case VirtualKey.NavigationRight:
-            {
-                if (ViewModel.IsMenuOpen)
-                {
-                    ViewModel.CloseNavigationCommand.Execute(null);
-                    e.Handled = true;
-                }
-
-                break;
-            }
-
-            // Left at edge opens nav menu
-            case VirtualKey.Left:
-            case VirtualKey.GamepadDPadLeft:
-            case VirtualKey.GamepadLeftThumbstickLeft:
-            case VirtualKey.NavigationLeft:
-            {
-                if (!ViewModel.IsMenuOpen && !FocusManager.TryMoveFocus(FocusNavigationDirection.Left))
-                {
-                    ViewModel.OpenNavigationCommand.Execute(null);
-                    e.Handled = true;
-                }
-
-                break;
-            }
-        }
     }
 
     internal sealed record Parameters(Action DeferredNavigationAction);
