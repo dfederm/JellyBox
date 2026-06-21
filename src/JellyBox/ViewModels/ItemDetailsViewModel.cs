@@ -28,6 +28,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
     private readonly JellyfinImageResolver _imageResolver;
     private readonly NavigationManager _navigationManager;
     private readonly CardFactory _cardFactory;
+    private readonly CancellableLoad _load = new();
 
     [ObservableProperty]
     public partial BaseItemDto? Item { get; set; }
@@ -143,11 +144,17 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         _cardFactory = cardFactory;
     }
 
-    internal async void HandleParameters(ItemDetails.Parameters parameters)
+    internal void HandleParameters(ItemDetails.Parameters parameters)
+        => _ = _load.RunAsync(cancellationToken => LoadAsync(parameters.ItemId, cancellationToken));
+
+    private async Task LoadAsync(Guid itemId, CancellationToken cancellationToken)
     {
         try
         {
-            Item = await _jellyfinApiClient.Items[parameters.ItemId].GetAsync();
+            BaseItemDto? item = await _jellyfinApiClient.Items[itemId].GetAsync(cancellationToken: cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+
+            Item = item;
 
             Name = Item!.Name;
 
@@ -220,8 +227,8 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
             Task<Section?>[] sectionTasks =
             [
-                GetNextUpSectionAsync(),
-                GetChildrenSectionAsync(),
+                GetNextUpSectionAsync(cancellationToken),
+                GetChildrenSectionAsync(cancellationToken),
                 GetCastSectionAsync("Cast & Crew", getGuestStars: false),
                 GetCastSectionAsync("Guest Stars", getGuestStars: true),
                 // TODO: Special Features
@@ -238,7 +245,12 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
                 }
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             Sections = sections;
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer load; leave state for the newer load to populate.
         }
         catch (Exception ex)
         {
@@ -521,7 +533,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         ResumePositionText = CanResume ? FormatResumePosition(positionTicks) : null;
     }
 
-    private async Task<Section?> GetNextUpSectionAsync()
+    private async Task<Section?> GetNextUpSectionAsync(CancellationToken cancellationToken)
     {
         if (Item is null)
         {
@@ -536,7 +548,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         BaseItemDtoQueryResult? result = await _jellyfinApiClient.Shows.NextUp.GetAsync(request =>
         {
             request.QueryParameters.SeriesId = Item.Id;
-        });
+        }, cancellationToken);
         if (result?.Items is null || result.Items.Count == 0)
         {
             return null;
@@ -560,7 +572,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         };
     }
 
-    private async Task<Section?> GetChildrenSectionAsync()
+    private async Task<Section?> GetChildrenSectionAsync(CancellationToken cancellationToken)
     {
         if (Item is null)
         {
@@ -578,7 +590,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             result = await _jellyfinApiClient.Shows[Item.Id!.Value].Seasons.GetAsync(request =>
             {
                 request.QueryParameters.Fields = [ItemFields.ItemCounts, ItemFields.PrimaryImageAspectRatio, ItemFields.CanDelete, ItemFields.MediaSourceCount];
-            });
+            }, cancellationToken);
         }
         else if (Item.Type == BaseItemDto_Type.Season)
         {
@@ -586,7 +598,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             {
                 request.QueryParameters.SeasonId = Item.Id;
                 request.QueryParameters.Fields = [ItemFields.ItemCounts, ItemFields.PrimaryImageAspectRatio, ItemFields.CanDelete, ItemFields.MediaSourceCount, ItemFields.Overview];
-            });
+            }, cancellationToken);
         }
         else
         {
@@ -607,7 +619,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
                 {
                     request.QueryParameters.SortBy = [ItemSortBy.PremiereDate, ItemSortBy.ProductionYear, ItemSortBy.SortName];
                 }
-            });
+            }, cancellationToken);
         }
 
         if (result?.Items is null)
