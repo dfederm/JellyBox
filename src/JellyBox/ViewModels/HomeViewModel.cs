@@ -11,6 +11,7 @@ internal sealed partial class HomeViewModel : ObservableObject, ILoadingViewMode
 {
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly CardFactory _cardFactory;
+    private readonly CancellableLoad _load = new();
 
     [ObservableProperty]
     public partial bool IsLoading { get; set; }
@@ -26,19 +27,21 @@ internal sealed partial class HomeViewModel : ObservableObject, ILoadingViewMode
         _cardFactory = cardFactory;
     }
 
-    public async void Initialize()
+    public void Initialize() => _ = _load.RunAsync(LoadAsync);
+
+    private async Task LoadAsync(CancellationToken cancellationToken)
     {
         IsLoading = true;
         try
         {
             Task<Section?>[] sectionTasks =
             [
-                GetUserViewsSectionAsync(),
-                GetResumeSectionAsync("Continue Watching", MediaType.Video),
-                GetResumeSectionAsync("Continue Listening", MediaType.Audio),
-                GetResumeSectionAsync("Continue Reading", MediaType.Book),
+                GetUserViewsSectionAsync(cancellationToken),
+                GetResumeSectionAsync("Continue Watching", MediaType.Video, cancellationToken),
+                GetResumeSectionAsync("Continue Listening", MediaType.Audio, cancellationToken),
+                GetResumeSectionAsync("Continue Reading", MediaType.Book, cancellationToken),
                 // TODO: LiveTV Section,
-                GetNextUpSectionAsync(),
+                GetNextUpSectionAsync(cancellationToken),
                 // TODO: LatestMedia Sections
             ];
 
@@ -53,7 +56,12 @@ internal sealed partial class HomeViewModel : ObservableObject, ILoadingViewMode
                 }
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             Sections = sections;
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer load; leave state for the newer load to populate.
         }
         catch (Exception ex)
         {
@@ -61,17 +69,20 @@ internal sealed partial class HomeViewModel : ObservableObject, ILoadingViewMode
         }
         finally
         {
-            IsLoading = false;
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                IsLoading = false;
+            }
         }
     }
 
-    private async Task<Section?> GetUserViewsSectionAsync()
+    private async Task<Section?> GetUserViewsSectionAsync(CancellationToken cancellationToken)
     {
-        BaseItemDtoQueryResult? result = await _jellyfinApiClient.UserViews.GetAsync();
+        BaseItemDtoQueryResult? result = await _jellyfinApiClient.UserViews.GetAsync(cancellationToken: cancellationToken);
         return CreateSection("My Media", result, CardShape.Backdrop, preferredImageType: null);
     }
 
-    private async Task<Section?> GetResumeSectionAsync(string name, MediaType mediaType)
+    private async Task<Section?> GetResumeSectionAsync(string name, MediaType mediaType, CancellationToken cancellationToken)
     {
         BaseItemDtoQueryResult? result = await _jellyfinApiClient.UserItems.Resume.GetAsync(requestConfig =>
         {
@@ -81,14 +92,14 @@ internal sealed partial class HomeViewModel : ObservableObject, ILoadingViewMode
             requestConfig.QueryParameters.EnableImageTypes = [ImageType.Primary, ImageType.Backdrop, ImageType.Thumb];
             requestConfig.QueryParameters.EnableTotalRecordCount = false;
             requestConfig.QueryParameters.MediaTypes = [mediaType];
-        });
+        }, cancellationToken);
 
         return CreateSection(name, result, CardShape.Backdrop, ImageType.Thumb);
     }
 
-    private async Task<Section?> GetNextUpSectionAsync()
+    private async Task<Section?> GetNextUpSectionAsync(CancellationToken cancellationToken)
     {
-        BaseItemDtoQueryResult? result = await _jellyfinApiClient.Shows.NextUp.GetAsync();
+        BaseItemDtoQueryResult? result = await _jellyfinApiClient.Shows.NextUp.GetAsync(cancellationToken: cancellationToken);
         return CreateSection("Next Up", result, CardShape.Backdrop, ImageType.Thumb);
     }
 

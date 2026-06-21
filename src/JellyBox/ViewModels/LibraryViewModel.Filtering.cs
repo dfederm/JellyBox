@@ -39,7 +39,7 @@ internal sealed partial class LibraryViewModel
     partial void OnIsSortDescendingChanged(bool value)
     {
         SaveViewSettings();
-        _ = RefreshItemsAsync();
+        _ = _load.RunAsync(RefreshAsync);
     }
 
     [RelayCommand]
@@ -47,7 +47,7 @@ internal sealed partial class LibraryViewModel
     {
         SelectedSortOption = option;
         SaveViewSettings();
-        _ = RefreshItemsAsync();
+        _ = _load.RunAsync(RefreshAsync);
     }
 
     [RelayCommand]
@@ -71,7 +71,7 @@ internal sealed partial class LibraryViewModel
 
         UpdateHasActiveFilters();
         SaveViewSettings();
-        _ = RefreshItemsAsync();
+        _ = _load.RunAsync(RefreshAsync);
 
         static void UnselectAll(List<FilterItem> filters)
         {
@@ -91,7 +91,7 @@ internal sealed partial class LibraryViewModel
 
         UpdateHasActiveFilters();
         SaveViewSettings();
-        _ = RefreshItemsAsync();
+        _ = _load.RunAsync(RefreshAsync);
     }
 
     private void UpdateHasActiveFilters()
@@ -113,7 +113,7 @@ internal sealed partial class LibraryViewModel
         ];
     }
 
-    private async Task LoadFilterValuesAsync()
+    private async Task LoadFilterValuesAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -121,7 +121,7 @@ internal sealed partial class LibraryViewModel
             {
                 parameters.QueryParameters.ParentId = _collectionItemId;
                 parameters.QueryParameters.IncludeItemTypes = [_itemKind];
-            });
+            }, cancellationToken);
 
             if (filters is not null)
             {
@@ -160,6 +160,11 @@ internal sealed partial class LibraryViewModel
 
                 UpdateHasActiveFilters();
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer load; let the caller unwind without logging.
+            throw;
         }
         catch (Exception ex)
         {

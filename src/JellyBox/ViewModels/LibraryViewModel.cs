@@ -14,6 +14,7 @@ internal sealed partial class LibraryViewModel : ObservableObject, ILoadingViewM
     private readonly AppSettings _appSettings;
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly CardFactory _cardFactory;
+    private readonly CancellableLoad _load = new();
 
     private Guid _collectionItemId;
     private BaseItemKind _itemKind;
@@ -62,18 +63,22 @@ internal sealed partial class LibraryViewModel : ObservableObject, ILoadingViewM
         RestoreFilterSelections(StatusFilters, _savedViewSettings.StatusFilters);
 
         _suppressRefresh = false;
-        _ = InitializeAsync();
+        _ = _load.RunAsync(InitializeAsync);
     }
 
-    private async Task InitializeAsync()
+    private async Task InitializeAsync(CancellationToken cancellationToken)
     {
         IsLoading = true;
 
         try
         {
             // Load filter values first so saved selections are restored before querying items
-            await LoadFilterValuesAsync();
-            await LoadItemsAsync();
+            await LoadFilterValuesAsync(cancellationToken);
+            await LoadItemsAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer load; leave state for the newer load to populate.
         }
         catch (Exception ex)
         {
@@ -81,11 +86,14 @@ internal sealed partial class LibraryViewModel : ObservableObject, ILoadingViewM
         }
         finally
         {
-            IsLoading = false;
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                IsLoading = false;
+            }
         }
     }
 
-    private async Task RefreshItemsAsync()
+    private async Task RefreshAsync(CancellationToken cancellationToken)
     {
         // Don't refresh if we haven't initialized yet
         if (SelectedSortOption is null)
@@ -97,19 +105,26 @@ internal sealed partial class LibraryViewModel : ObservableObject, ILoadingViewM
 
         try
         {
-            await LoadItemsAsync();
+            await LoadItemsAsync(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by a newer load; leave state for the newer load to populate.
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error in LibraryViewModel.RefreshItemsAsync: {ex}");
+            Debug.WriteLine($"Error in LibraryViewModel.RefreshAsync: {ex}");
         }
         finally
         {
-            IsLoading = false;
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                IsLoading = false;
+            }
         }
     }
 
-    private async Task LoadItemsAsync()
+    private async Task LoadItemsAsync(CancellationToken cancellationToken)
     {
         string[] selectedGenres = [.. GenreFilters.Where(f => f.IsSelected).Select(f => f.Label)];
         int?[] selectedYears = [.. YearFilters.Where(f => f.IsSelected).Select(f => (int?)int.Parse(f.Label))];
@@ -150,7 +165,9 @@ internal sealed partial class LibraryViewModel : ObservableObject, ILoadingViewM
             {
                 parameters.QueryParameters.Filters = selectedStatusFilters;
             }
-        });
+        }, cancellationToken);
+
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (result?.Items is not null)
         {
