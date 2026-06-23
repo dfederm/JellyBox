@@ -1,5 +1,9 @@
+using System.Diagnostics;
 using JellyBox.Views;
+using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
+using Windows.ApplicationModel;
+using Windows.ApplicationModel.Core;
 using Windows.System;
 using Windows.UI.Core;
 using Windows.UI.Input;
@@ -15,6 +19,9 @@ internal sealed class NavigationManager
 {
     // Fake item id used to identify the home page
     public static readonly Guid HomeId = new Guid("CDF95D47-90C2-4057-B12C-BA81C34F2CB9");
+
+    // Fake item id used to identify the search page
+    public static readonly Guid SearchId = new Guid("A4B8C2E1-6F3D-4A91-9B7E-2D5C8F1A3E64");
 
     /// <summary>
     /// Opens the shell navigation menu.
@@ -38,6 +45,13 @@ internal sealed class NavigationManager
     private object? _currentAppParameter;
 
     private object? _currentContentParameter;
+
+    private readonly JellyfinApiClient _jellyfinApiClient;
+
+    public NavigationManager(JellyfinApiClient jellyfinApiClient)
+    {
+        _jellyfinApiClient = jellyfinApiClient;
+    }
 
     /// <summary>
     /// Gets the item associated with the current page.
@@ -94,34 +108,63 @@ internal sealed class NavigationManager
         NavigateContentFrame<Home>();
     }
 
-    public void NavigateToItem(BaseItemDto item)
+    public void NavigateToSearch(string query)
     {
-        Guid itemId = item.Id!.Value;
-        if (item.Type == BaseItemDto_Type.CollectionFolder)
+        CurrentItem = SearchId;
+        Search.Parameters parameters = new(query);
+
+        if (_contentFrame is not null
+            && _contentFrame.CurrentSourcePageType == typeof(Search)
+            && Equals(_currentContentParameter, parameters))
         {
-            switch (item.CollectionType)
+            if (_contentFrame.Content is Search searchPage)
             {
-                case BaseItemDto_CollectionType.Movies:
-                {
-                    CurrentItem = itemId;
-                    NavigateContentFrame<Library>(new Library.Parameters(itemId, BaseItemKind.Movie, item.Name ?? "Movies"));
-                    return;
-                }
-                case BaseItemDto_CollectionType.Tvshows:
-                {
-                    CurrentItem = itemId;
-                    NavigateContentFrame<Library>(new Library.Parameters(itemId, BaseItemKind.Series, item.Name ?? "TV Shows"));
-                    return;
-                }
+                searchPage.ViewModel.HandleParameters(parameters);
             }
 
-            // TODO: Some kind of error message. Or genericize the collection view.
+            return;
         }
-        else
+
+        NavigateContentFrame<Search>(parameters);
+    }
+
+    public void NavigateToItem(Guid itemId) => _ = NavigateToItemAsync(itemId);
+
+    public void NavigateToItem(BaseItemDto item) => NavigateToResolvedItem(item);
+
+    private async Task NavigateToItemAsync(Guid itemId)
+    {
+        try
+        {
+            BaseItemDto? item = await _jellyfinApiClient.Items[itemId].GetAsync();
+            if (item is null)
+            {
+                return;
+            }
+
+            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
+                CoreDispatcherPriority.Normal,
+                () => NavigateToResolvedItem(item));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error in NavigationManager.NavigateToItemAsync: {ex}");
+        }
+    }
+
+    private void NavigateToResolvedItem(BaseItemDto item)
+    {
+        Guid itemId = item.Id!.Value;
+
+        if (CollectionNavigation.TryCreateLibraryParameters(item, out Library.Parameters libraryParameters))
         {
             CurrentItem = itemId;
-            NavigateContentFrame<ItemDetails>(new ItemDetails.Parameters(itemId));
+            NavigateContentFrame<Library>(libraryParameters);
+            return;
         }
+
+        CurrentItem = itemId;
+        NavigateContentFrame<ItemDetails>(new ItemDetails.Parameters(itemId));
     }
 
     public void NavigateToPerson(BaseItemPerson person)

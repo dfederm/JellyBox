@@ -147,16 +147,25 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
     internal void HandleParameters(ItemDetails.Parameters parameters)
         => _ = _load.RunAsync(cancellationToken => LoadAsync(parameters.ItemId, cancellationToken));
 
+    public void CancelLoading() => _ = _load.CancelAsync();
+
     private async Task LoadAsync(Guid itemId, CancellationToken cancellationToken)
     {
+        ResetDisplayState();
+
         try
         {
             BaseItemDto? item = await _jellyfinApiClient.Items[itemId].GetAsync(cancellationToken: cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (item is null)
+            {
+                return;
+            }
+
             Item = item;
 
-            Name = Item!.Name;
+            Name = Item.Name;
 
             // Disable backdrop for Person and Book types because they only have primary images
             if (Item.Type is not BaseItemDto_Type.Person and not BaseItemDto_Type.Book)
@@ -206,12 +215,20 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
             if (Item.MediaSources is not null && Item.MediaSources.Count > 0)
             {
-                SourceContainers = new ObservableCollection<MediaSourceInfoWrapper>(Item.MediaSources.Select(s => new MediaSourceInfoWrapper(s.Name!, s)));
+                SourceContainers = new ObservableCollection<MediaSourceInfoWrapper>(
+                    Item.MediaSources.Select(s => new MediaSourceInfoWrapper(s.Name ?? "Unknown", s)));
                 HasMultipleSources = SourceContainers.Count > 1;
                 HasSingleSource = SourceContainers.Count == 1;
 
                 // This will trigger OnSelectedSourceContainerChanged, which populates the video, audio, and subtitle drop-downs.
                 SelectedSourceContainer = SourceContainers[0];
+            }
+            else
+            {
+                SourceContainers = null;
+                HasMultipleSources = false;
+                HasSingleSource = false;
+                SelectedSourceContainer = null;
             }
 
             TagLine = Item.Taglines is not null && Item.Taglines.Count > 0 ? Item.Taglines[0] : null;
@@ -239,6 +256,8 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             foreach (Task<Section?> sectionTask in sectionTasks)
             {
                 Section? section = await sectionTask;
+                cancellationToken.ThrowIfCancellationRequested();
+
                 if (section is not null)
                 {
                     sections.Add(section);
@@ -254,23 +273,58 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in HandleParameters: {ex}");
+            System.Diagnostics.Debug.WriteLine($"Error in ItemDetailsViewModel.LoadAsync: {ex}");
         }
     }
 
     partial void OnSelectedSourceContainerChanged(MediaSourceInfoWrapper? value)
     {
-        if (value is not null)
+        if (value is null)
+        {
+            return;
+        }
+
+        try
         {
             DetermineVideoOptions(value.Value);
             DetermineAudioOptions(value.Value);
             DetermineSubtitleOptions(value.Value);
         }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error in OnSelectedSourceContainerChanged: {ex}");
+        }
+    }
+
+    private void ResetDisplayState()
+    {
+        SourceContainers = null;
+        HasMultipleSources = false;
+        HasSingleSource = false;
+        SelectedSourceContainer = null;
+        VideoStreams = null;
+        SelectedVideoStream = null;
+        AudioStreams = null;
+        SelectedAudioStream = null;
+        HasMultipleAudioStreams = false;
+        HasSingleAudioStream = false;
+        SubtitleStreams = null;
+        SelectedSubtitleStream = null;
+        HasMultipleSubtitleStreams = false;
+        HasSingleSubtitleStream = false;
+        Sections = null;
     }
 
     private void DetermineVideoOptions(MediaSourceInfo mediaSourceInfo)
     {
-        List<MediaStream> videoStreams = mediaSourceInfo.MediaStreams!
+        if (mediaSourceInfo.MediaStreams is null)
+        {
+            VideoStreams = [];
+            SelectedVideoStream = null;
+            return;
+        }
+
+        List<MediaStream> videoStreams = mediaSourceInfo.MediaStreams
             .Where(s => s.Type == MediaStream_Type.Video)
             .OrderBy(s => s, MediaStreamComparer.Instance)
             .ToList();
@@ -302,7 +356,16 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
     private void DetermineAudioOptions(MediaSourceInfo mediaSourceInfo)
     {
-        List<MediaStream> audioStreams = mediaSourceInfo.MediaStreams!
+        if (mediaSourceInfo.MediaStreams is null)
+        {
+            AudioStreams = [];
+            HasMultipleAudioStreams = false;
+            HasSingleAudioStream = false;
+            SelectedAudioStream = null;
+            return;
+        }
+
+        List<MediaStream> audioStreams = mediaSourceInfo.MediaStreams
             .Where(s => s.Type == MediaStream_Type.Audio)
             .OrderBy(s => s, MediaStreamComparer.Instance)
             .ToList();
@@ -330,7 +393,16 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
 
     private void DetermineSubtitleOptions(MediaSourceInfo mediaSourceInfo)
     {
-        List<MediaStream> subtitleStreams = mediaSourceInfo.MediaStreams!
+        if (mediaSourceInfo.MediaStreams is null)
+        {
+            SubtitleStreams = [MediaStreamOption.SubtitlesOff];
+            HasMultipleSubtitleStreams = false;
+            HasSingleSubtitleStream = true;
+            SelectedSubtitleStream = MediaStreamOption.SubtitlesOff;
+            return;
+        }
+
+        List<MediaStream> subtitleStreams = mediaSourceInfo.MediaStreams
             .Where(s => s.Type == MediaStream_Type.Subtitle)
             .OrderBy(s => s, MediaStreamComparer.Instance)
             .ToList();
@@ -523,7 +595,18 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             return;
         }
 
-        IsPlayed = Item.UserData!.Played.GetValueOrDefault();
+        if (Item.UserData is null)
+        {
+            IsPlayed = false;
+            IsFavorite = false;
+            CanResume = false;
+            PlayButtonText = "Play";
+            PlayButtonGlyph = Glyphs.Play;
+            ResumePositionText = null;
+            return;
+        }
+
+        IsPlayed = Item.UserData.Played.GetValueOrDefault();
         IsFavorite = Item.UserData.IsFavorite.GetValueOrDefault();
 
         long positionTicks = Item.UserData.PlaybackPositionTicks.GetValueOrDefault();

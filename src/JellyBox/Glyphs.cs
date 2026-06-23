@@ -7,6 +7,7 @@ internal static class Glyphs
 {
     // Navigation
     public const string Home = "\uE80F";
+    public const string Search = "\uE721";
     public const string Library = "\uE8F1";
     public const string Switch = "\uE895";
     public const string SignOut = "\uE8BB";
