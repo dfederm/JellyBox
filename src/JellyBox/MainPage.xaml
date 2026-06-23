@@ -27,10 +27,10 @@
                 IsTabStop="False"
                 PlaceholderText="Search movies and TV shows"
                 Style="{StaticResource SearchAutoSuggestBox}"
+                UpdateTextOnSelect="False"
                 ItemsSource="{x:Bind ViewModel.Search.Suggestions, Mode=OneWay}"
                 TextChanged="SearchBox_TextChanged"
                 QuerySubmitted="SearchBox_QuerySubmitted"
-                SuggestionChosen="SearchBox_SuggestionChosen"
                 LostFocus="SearchBox_LostFocus"
                 XYFocusKeyboardNavigation="Enabled">
                 <AutoSuggestBox.QueryIcon>
@@ -38,7 +38,11 @@
                 </AutoSuggestBox.QueryIcon>
                 <AutoSuggestBox.ItemTemplate>
                     <DataTemplate x:DataType="models:SearchSuggestion">
-                        <StackPanel Orientation="Horizontal" Spacing="12" Padding="4,10">
+                        <StackPanel
+                            Orientation="Horizontal"
+                            Spacing="12"
+                            Padding="4,10"
+                            Tapped="SearchSuggestionItem_Tapped">
                             <FontIcon
                                 FontFamily="{StaticResource SegoeIcons}"
                                 Glyph="{x:Bind g:Glyphs.Search}"
