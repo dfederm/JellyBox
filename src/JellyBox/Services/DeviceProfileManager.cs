@@ -40,8 +40,30 @@ internal sealed class DeviceProfileManager
 
     public DeviceProfile Profile { get; private set; } = null!; // TODO
 
+    private Task? _initializationTask;
+
+    /// <summary>
+    /// Ensures the device profile has been built before playback requests.
+    /// Safe to call concurrently; initialization runs at most once until failure.
+    /// </summary>
+    public Task EnsureInitializedAsync()
+        => _initializationTask ??= InitializeInternalAsync();
+
+    private async Task InitializeInternalAsync()
+    {
+        try
+        {
+            await InitializeAsync();
+        }
+        catch
+        {
+            _initializationTask = null;
+            throw;
+        }
+    }
+
     // This logic is adapted from the web client's browserDeviceProfile.js
-    public async Task InitializeAsync()
+    private async Task InitializeAsync()
     {
         CodecQuery codecQuery = new();
 

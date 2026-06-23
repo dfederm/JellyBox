@@ -127,7 +127,7 @@ internal sealed partial class VideoViewModel
                     {
                         info.AppendLine($"  Language: {subtitleStream.Language}");
                     }
-                    info.AppendLine($"  Delivery: {(subtitleStream.IsExternal == true ? "External" : "Embedded")}");
+                    info.AppendLine($"  Delivery: {subtitleStream.DeliveryMethod?.ToString() ?? (subtitleStream.IsExternal == true ? "External" : "Embedded")}");
                     info.AppendLine();
                 }
             }
