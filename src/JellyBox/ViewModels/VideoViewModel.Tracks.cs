@@ -42,8 +42,8 @@ internal sealed partial class VideoViewModel
         // UWP's TimedMetadataTracks collection orders embedded tracks first, then external tracks
         // in the order they were added to ExternalTimedTextSources.
         // See: https://learn.microsoft.com/en-us/windows/uwp/audio-video-camera/media-playback-with-mediasource
-        // We include ALL subtitles in the list, but only assign UwpTrackIndex to supported formats.
-        // Unsupported formats will trigger a playback restart to force server-side transcoding.
+        // UwpTrackIndex follows DeliveryMethod: Embed and the selected External track are presented
+        // client-side; other External tracks restart playback to load; Encode/Hls/Drop rely on the server.
         List<TrackInfo> subtitleTracks = [];
         int defaultSubtitleIndex = selectedSubtitleIndex ?? mediaSourceInfo.DefaultSubtitleStreamIndex ?? -1;
         int uwpSubtitleIndex = 0;
@@ -53,14 +53,14 @@ internal sealed partial class VideoViewModel
             .Where(s => s.Type == MediaStream_Type.Subtitle && !s.IsExternal.GetValueOrDefault()))
         {
             string displayName = stream.DisplayTitle ?? stream.Language ?? $"Track {stream.Index}";
-            bool isSupported = IsSubtitleFormatSupported(stream);
+            bool hasUwpTrack = HasClientSideUwpSubtitleTrack(stream, defaultSubtitleIndex);
 
             subtitleTracks.Add(new TrackInfo(
                 stream.Index!.Value,
-                isSupported ? uwpSubtitleIndex : null,
+                hasUwpTrack ? uwpSubtitleIndex : null,
                 displayName));
 
-            if (isSupported)
+            if (hasUwpTrack)
             {
                 uwpSubtitleIndex++;
             }
@@ -71,14 +71,14 @@ internal sealed partial class VideoViewModel
             .Where(s => s.Type == MediaStream_Type.Subtitle && s.IsExternal.GetValueOrDefault()))
         {
             string displayName = stream.DisplayTitle ?? stream.Language ?? $"Track {stream.Index}";
-            bool isSupported = IsSubtitleFormatSupported(stream);
+            bool hasUwpTrack = HasClientSideUwpSubtitleTrack(stream, defaultSubtitleIndex);
 
             subtitleTracks.Add(new TrackInfo(
                 stream.Index!.Value,
-                isSupported ? uwpSubtitleIndex : null,
+                hasUwpTrack ? uwpSubtitleIndex : null,
                 displayName));
 
-            if (isSupported)
+            if (hasUwpTrack)
             {
                 uwpSubtitleIndex++;
             }
@@ -90,11 +90,16 @@ internal sealed partial class VideoViewModel
 
     private void OnTimedMetadataTracksChanged(MediaPlaybackItem sender, IVectorChangedEventArgs args)
     {
+        if (args.CollectionChange != CollectionChange.ItemInserted)
+        {
+            return;
+        }
+
         // Capture the sender reference for use in the dispatcher callback
         MediaPlaybackItem playbackItem = sender;
 
         _ = CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
-            CoreDispatcherPriority.Normal,
+            CoreDispatcherPriority.Low,
             () =>
             {
                 try
@@ -105,19 +110,43 @@ internal sealed partial class VideoViewModel
                         return;
                     }
 
-                    // Present the selected subtitle track if one is selected
-                    int selectedIndex = _playbackProgressInfo?.SubtitleStreamIndex ?? -1;
-                    int? uwpIndex = GetSubtitleUwpIndex(selectedIndex);
-                    if (uwpIndex.HasValue && uwpIndex.Value < playbackItem.TimedMetadataTracks.Count)
-                    {
-                        playbackItem.TimedMetadataTracks.SetPresentationMode((uint)uwpIndex.Value, TimedMetadataTrackPresentationMode.PlatformPresented);
-                    }
+                    PresentSelectedSubtitleTrack(playbackItem);
                 }
                 catch (Exception ex)
                 {
                     Debug.WriteLine($"Error in OnTimedMetadataTracksChanged: {ex}");
                 }
             });
+    }
+
+    private void PresentSelectedSubtitleTrack(MediaPlaybackItem playbackItem)
+    {
+        int selectedIndex = _playbackProgressInfo?.SubtitleStreamIndex ?? -1;
+        if (selectedIndex < 0)
+        {
+            for (uint i = 0; i < playbackItem.TimedMetadataTracks.Count; i++)
+            {
+                playbackItem.TimedMetadataTracks.SetPresentationMode(i, TimedMetadataTrackPresentationMode.Disabled);
+            }
+
+            return;
+        }
+
+        int? uwpIndex = GetSubtitleUwpIndex(selectedIndex);
+        if (!uwpIndex.HasValue || uwpIndex.Value >= playbackItem.TimedMetadataTracks.Count)
+        {
+            Debug.WriteLine(
+                $"Subtitle UWP index out of range for Jellyfin index {selectedIndex} (uwp={uwpIndex}, count={playbackItem.TimedMetadataTracks.Count}).");
+            return;
+        }
+
+        for (uint i = 0; i < playbackItem.TimedMetadataTracks.Count; i++)
+        {
+            var mode = i == uwpIndex.Value
+                ? TimedMetadataTrackPresentationMode.PlatformPresented
+                : TimedMetadataTrackPresentationMode.Disabled;
+            playbackItem.TimedMetadataTracks.SetPresentationMode(i, mode);
+        }
     }
 
     /// <summary>
@@ -162,24 +191,46 @@ internal sealed partial class VideoViewModel
 
         if (canSeamlessSwitch)
         {
-            // Set each track's presentation mode in a single pass
-            for (uint i = 0; i < _currentPlaybackItem!.TimedMetadataTracks.Count; i++)
-            {
-                var mode = i == track.UwpTrackIndex
-                    ? TimedMetadataTrackPresentationMode.PlatformPresented
-                    : TimedMetadataTrackPresentationMode.Disabled;
-                _currentPlaybackItem.TimedMetadataTracks.SetPresentationMode(i, mode);
-            }
-
+            PresentSelectedSubtitleTrack(_currentPlaybackItem!);
             Debug.WriteLine(track.UwpTrackIndex.HasValue
                 ? $"Seamless subtitle switch to Jellyfin index {track.JellyfinIndex} (UWP index {track.UwpTrackIndex})"
                 : "Subtitles disabled");
             return;
         }
 
-        // Fall back to restarting playback (e.g., for transcoding scenarios or unsupported formats)
+        // Fall back to restarting playback (e.g., switching unloaded external tracks, transcoding, unsupported formats)
         Debug.WriteLine($"Restarting playback for subtitle track {track.JellyfinIndex}");
         RestartPlaybackWithCurrentPosition();
+    }
+
+    /// <summary>
+    /// Returns whether the stream has a UWP TimedMetadataTrack that can be toggled without restarting playback.
+    /// </summary>
+    private static bool HasClientSideUwpSubtitleTrack(MediaStream stream, int selectedSubtitleIndex)
+    {
+        if (!IsSubtitleFormatSupported(stream))
+        {
+            return false;
+        }
+
+        return GetSubtitleDeliveryMethod(stream) switch
+        {
+            MediaStream_DeliveryMethod.Embed => true,
+            MediaStream_DeliveryMethod.External => stream.Index == selectedSubtitleIndex,
+            _ => false,
+        };
+    }
+
+    private static MediaStream_DeliveryMethod GetSubtitleDeliveryMethod(MediaStream stream)
+    {
+        if (stream.DeliveryMethod.HasValue)
+        {
+            return stream.DeliveryMethod.Value;
+        }
+
+        return stream.IsExternal.GetValueOrDefault()
+            ? MediaStream_DeliveryMethod.External
+            : MediaStream_DeliveryMethod.Embed;
     }
 
     /// <summary>

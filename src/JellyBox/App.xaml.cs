@@ -125,7 +125,7 @@ sealed partial class App : Application
     {
         try
         {
-            await _deviceProfileManager.InitializeAsync();
+            await _deviceProfileManager.EnsureInitializedAsync();
         }
         catch (Exception ex)
         {

@@ -21,6 +21,7 @@ internal sealed partial class VideoViewModel
         {
             _transportControls = transportControls;
             _currentItem = parameters.Item;
+            _cachedMaxStreamingBitrate = null;
             BaseItemDto item = _currentItem;
             _playerElement = playerElement;
 
