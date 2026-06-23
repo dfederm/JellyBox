@@ -8,7 +8,9 @@ namespace JellyBox.Behaviors;
 /// <summary>
 /// Automatically focuses the first item in a list once items are loaded and containers are realized.
 /// </summary>
+#pragma warning disable CA1812 // Instantiated via XAML Interaction.Behaviors.
 internal sealed class FocusFirstItemBehavior : Behavior<ListViewBase>
+#pragma warning restore CA1812
 {
     private bool _hasFocused;
 

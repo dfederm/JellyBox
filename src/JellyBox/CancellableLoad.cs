@@ -16,6 +16,18 @@ internal sealed class CancellableLoad
     private CancellationTokenSource? _cts;
 
     /// <summary>
+    /// Cancels any in-flight load without starting a new one.
+    /// </summary>
+    public async Task CancelAsync()
+    {
+        CancellationTokenSource? previous = Interlocked.Exchange(ref _cts, null);
+        if (previous is not null)
+        {
+            await previous.CancelAsync();
+        }
+    }
+
+    /// <summary>
     /// Cancels any prior in-flight load, then runs <paramref name="operation"/> with a fresh
     /// cancellation token. If this load is itself superseded by a later call, the resulting
     /// cancellation is swallowed.

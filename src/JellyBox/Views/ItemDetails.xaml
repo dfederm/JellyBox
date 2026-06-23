@@ -63,7 +63,7 @@
             VerticalScrollBarVisibility="Hidden"
             BringIntoViewOnFocusChange="False"
             IsTabStop="False">
-            <Grid x:Name="ContentGrid" XYFocusKeyboardNavigation="Enabled" Margin="48,100,48,48">
+            <Grid x:Name="ContentGrid" XYFocusKeyboardNavigation="Enabled" Margin="48,24,48,48">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="380" />
                     <ColumnDefinition Width="*" />
@@ -250,7 +250,7 @@
                                     VerticalAlignment="Center" />
                                 <TextBlock
                                     Grid.Column="1"
-                                    Text="{x:Bind ViewModel.SelectedSourceContainer.Value.Name, Mode=OneWay}"
+                                    Text="{x:Bind GetSourceContainerName(ViewModel.SelectedSourceContainer), Mode=OneWay}"
                                     VerticalAlignment="Center" />
                                 <FontIcon
                                     Grid.Column="2"
@@ -285,7 +285,7 @@
                                 FontSize="{StaticResource FontS}" />
                             <TextBlock
                                 Grid.Column="1"
-                                Text="{x:Bind ViewModel.SelectedSourceContainer.Value.Name, Mode=OneWay}"
+                                Text="{x:Bind GetSourceContainerName(ViewModel.SelectedSourceContainer), Mode=OneWay}"
                                 Foreground="{StaticResource TextPrimary}"
                                 FontSize="{StaticResource FontS}" />
                         </Grid>
@@ -312,7 +312,7 @@
                                     VerticalAlignment="Center" />
                                 <TextBlock
                                     Grid.Column="1"
-                                    Text="{x:Bind ViewModel.SelectedAudioStream.DisplayText, Mode=OneWay}"
+                                    Text="{x:Bind GetStreamDisplayText(ViewModel.SelectedAudioStream), Mode=OneWay}"
                                     VerticalAlignment="Center" />
                                 <FontIcon
                                     Grid.Column="2"
@@ -347,7 +347,7 @@
                                 FontSize="{StaticResource FontS}" />
                             <TextBlock
                                 Grid.Column="1"
-                                Text="{x:Bind ViewModel.SelectedAudioStream.DisplayText, Mode=OneWay}"
+                                Text="{x:Bind GetStreamDisplayText(ViewModel.SelectedAudioStream), Mode=OneWay}"
                                 Foreground="{StaticResource TextPrimary}"
                                 FontSize="{StaticResource FontS}" />
                         </Grid>
@@ -374,7 +374,7 @@
                                     VerticalAlignment="Center" />
                                 <TextBlock
                                     Grid.Column="1"
-                                    Text="{x:Bind ViewModel.SelectedSubtitleStream.DisplayText, Mode=OneWay}"
+                                    Text="{x:Bind GetStreamDisplayText(ViewModel.SelectedSubtitleStream), Mode=OneWay}"
                                     VerticalAlignment="Center" />
                                 <FontIcon
                                     Grid.Column="2"
@@ -409,7 +409,7 @@
                                 FontSize="{StaticResource FontS}" />
                             <TextBlock
                                 Grid.Column="1"
-                                Text="{x:Bind ViewModel.SelectedSubtitleStream.DisplayText, Mode=OneWay}"
+                                Text="{x:Bind GetStreamDisplayText(ViewModel.SelectedSubtitleStream), Mode=OneWay}"
                                 Foreground="{StaticResource TextPrimary}"
                                 FontSize="{StaticResource FontS}" />
                         </Grid>

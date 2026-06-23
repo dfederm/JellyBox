@@ -18,7 +18,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header: Title + Toolbar -->
-        <StackPanel Grid.Row="0" Padding="48,24,48,0">
+        <StackPanel Grid.Row="0" Padding="48,16,48,0">
             <TextBlock
                 Text="{x:Bind ViewModel.Title, Mode=OneWay}"
                 FontSize="{StaticResource FontXL}"
@@ -101,12 +101,11 @@
                     x:Name="FilterButton"
                     Background="{StaticResource BackgroundElevated}"
                     Foreground="{StaticResource TextPrimary}"
-                    BorderBrush="{x:Bind viewmodels:LibraryViewModel.GetFilterBorderBrush(ViewModel.HasActiveFilters), Mode=OneWay}"
+                    BorderBrush="{StaticResource BorderSubtle}"
                     BorderThickness="1"
                     Padding="16,8"
                     CornerRadius="4"
-                    XYFocusKeyboardNavigation="Enabled"
-                    XYFocusRight="{x:Bind viewmodels:LibraryViewModel.GetFilterXYFocusRight(ViewModel.HasActiveFilters, FilterButton, ClearFiltersButton), Mode=OneWay}">
+                    XYFocusKeyboardNavigation="Enabled">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon FontFamily="{StaticResource SegoeIcons}" Glyph="&#xE71C;" FontSize="16" />
                         <TextBlock Text="Filter" FontSize="{StaticResource FontS}" />
@@ -176,8 +175,7 @@
                     Foreground="{StaticResource AccentColor}"
                     BorderThickness="0"
                     Padding="12,8"
-                    CornerRadius="4"
-                    XYFocusRight="{x:Bind ClearFiltersButton}">
+                    CornerRadius="4">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <FontIcon FontFamily="{StaticResource SegoeIcons}" Glyph="&#xE711;" FontSize="12" />
                         <TextBlock Text="Clear Filters" FontSize="{StaticResource FontS}" />

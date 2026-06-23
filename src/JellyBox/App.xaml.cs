@@ -40,9 +40,20 @@ sealed partial class App : Application
 
         InitializeComponent();
 
+        UnhandledException += OnUnhandledException;
+
         Current.RequiresPointerMode = ApplicationRequiresPointerMode.WhenRequested;
 
         Suspending += OnSuspending;
+    }
+
+    private void OnUnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
+    {
+        System.Diagnostics.Debug.WriteLine($"Unhandled UI exception: {e.Exception}");
+        if (e.Exception.InnerException is not null)
+        {
+            System.Diagnostics.Debug.WriteLine($"Inner exception: {e.Exception.InnerException}");
+        }
     }
 
     /// <inheritdoc/>

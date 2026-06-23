@@ -1008,6 +1008,16 @@
         </Setter>
     </Style>
 
+    <Style x:Key="SearchAutoSuggestBox" TargetType="AutoSuggestBox">
+        <Setter Property="MinHeight" Value="48" />
+        <Setter Property="Foreground" Value="{StaticResource TextPrimary}" />
+        <Setter Property="FontSize" Value="{StaticResource FontM}" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualPrimaryBrush" Value="{StaticResource FocusBorder}" />
+        <Setter Property="FocusVisualSecondaryBrush" Value="Transparent" />
+        <Setter Property="FocusVisualPrimaryThickness" Value="3" />
+    </Style>
+
     <Style x:Key="PrimaryTextBox"  TargetType="TextBox">
         <Setter Property="MinWidth" Value="{ThemeResource TextControlThemeMinWidth}" />
         <Setter Property="MinHeight" Value="40" />

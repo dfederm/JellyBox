@@ -19,7 +19,11 @@ internal sealed partial class Home : Page
         SectionsControl.LayoutUpdated += SectionsControl_LayoutUpdated;
     }
 
-    protected override void OnNavigatedTo(NavigationEventArgs e) => ViewModel.Initialize();
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        _hasFocusedFirstItem = false;
+        ViewModel.Initialize();
+    }
 
     public HomeViewModel ViewModel { get; }
 
