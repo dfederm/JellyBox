@@ -20,7 +20,7 @@
                 x:Name="SectionsControl"
                 ItemsSource="{x:Bind ViewModel.Sections, Mode=OneWay}"
                 ItemTemplate="{StaticResource Section}"
-                Margin="0,48,0,48"
+                Margin="0,16,0,48"
                 XYFocusKeyboardNavigation="Enabled">
                 <Interactivity:Interaction.Behaviors>
                     <Behaviors:SectionNavigationBehavior

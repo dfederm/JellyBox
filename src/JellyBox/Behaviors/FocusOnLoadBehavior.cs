@@ -4,7 +4,9 @@ using Windows.UI.Xaml.Controls;
 
 namespace JellyBox.Behaviors;
 
+#pragma warning disable CA1812 // Instantiated via XAML Interaction.Behaviors.
 internal sealed class FocusOnLoadBehavior : Behavior<Control>
+#pragma warning restore CA1812
 {
     protected override void OnAttached()
     {

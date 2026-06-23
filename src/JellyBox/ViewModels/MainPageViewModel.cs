@@ -26,14 +26,18 @@ internal sealed partial class MainPageViewModel : ObservableObject
     [ObservableProperty]
     public partial ObservableCollection<NavigationViewItemBase>? NavigationItems { get; set; }
 
+    public ShellSearchViewModel Search { get; }
+
     public MainPageViewModel(
         AppSettings appSettings,
         JellyfinApiClient jellyfinApiClient,
-        NavigationManager navigationManager)
+        NavigationManager navigationManager,
+        ShellSearchViewModel shellSearchViewModel)
     {
         _appSettings = appSettings;
         _jellyfinApiClient = jellyfinApiClient;
         _navigationManager = navigationManager;
+        Search = shellSearchViewModel;
         _navigationManager.OpenNavigationMenu = () => OpenNavigationCommand.Execute(null);
         _navigationManager.ToggleNavigationMenu = () => ToggleNavigationCommand.Execute(null);
         _navigationManager.TryCloseNavigationMenu = () =>
@@ -91,33 +95,42 @@ internal sealed partial class MainPageViewModel : ObservableObject
 
     public void UpdateSelectedMenuItem()
     {
-        Guid? currentItem = _navigationManager.CurrentItem;
-        if (!currentItem.HasValue)
+        if (NavigationItems is null)
         {
             return;
         }
 
-        if (NavigationItems is not null)
+        Guid? currentItem = _navigationManager.CurrentItem;
+        NavigationViewItem? selectedItem = null;
+
+        if (currentItem.HasValue && currentItem.Value != NavigationManager.SearchId)
         {
-            _isUpdatingSelection = true;
-            try
+            foreach (NavigationViewItemBase item in NavigationItems)
             {
-                foreach (NavigationViewItemBase item in NavigationItems)
+                if (item is NavigationViewItem navItem
+                    && item.Tag is NavigationViewItemContext context
+                    && context.ItemId == currentItem)
                 {
-                    if (item.Tag is NavigationViewItemContext context)
-                    {
-                        if (context.ItemId == currentItem)
-                        {
-                            item.IsSelected = true;
-                            break;
-                        }
-                    }
+                    selectedItem = navItem;
+                    break;
                 }
             }
-            finally
+        }
+
+        _isUpdatingSelection = true;
+        try
+        {
+            foreach (NavigationViewItemBase item in NavigationItems)
             {
-                _isUpdatingSelection = false;
+                if (item is NavigationViewItem navItem)
+                {
+                    navItem.IsSelected = ReferenceEquals(navItem, selectedItem);
+                }
             }
+        }
+        finally
+        {
+            _isUpdatingSelection = false;
         }
     }
 
