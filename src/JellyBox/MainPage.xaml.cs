@@ -1,4 +1,6 @@
+using System;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using JellyBox.Models;
 using JellyBox.Services;
 using JellyBox.ViewModels;
@@ -8,14 +10,18 @@ using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
+using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Navigation;
 
 namespace JellyBox;
 
 internal sealed partial class MainPage : Page
 {
+    private static readonly TimeSpan OskDismissQuerySubmitSuppressWindow = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan SuggestionPickQuerySubmitSuppressWindow = TimeSpan.FromMilliseconds(300);
+
     private FrameworkElement? _lastFocusedElement;
-    private bool _ignoreNextQuerySubmitted;
+    private DateTimeOffset _suppressQuerySubmittedUntil;
     private bool _suppressSearchTextSync;
 
     public MainPage()
@@ -25,6 +31,7 @@ internal sealed partial class MainPage : Page
         ViewModel = AppServices.Instance.ServiceProvider.GetRequiredService<MainPageViewModel>();
         ViewModel.IsMenuOpenChanged += OnIsMenuOpenChanged;
         ViewModel.Search.PropertyChanged += OnSearchPropertyChanged;
+        PreviewKeyDown += MainPage_PreviewKeyDown;
 
         // Cache the page state so the ContentFrame's BackStack can be preserved
         NavigationCacheMode = NavigationCacheMode.Required;
@@ -41,6 +48,7 @@ internal sealed partial class MainPage : Page
         {
             ContentFrame.Navigated -= ContentFrameNavigated;
             ViewModel.Search.PropertyChanged -= OnSearchPropertyChanged;
+            PreviewKeyDown -= MainPage_PreviewKeyDown;
         };
     }
 
@@ -135,7 +143,46 @@ internal sealed partial class MainPage : Page
 
     private void SearchBox_LostFocus(object sender, RoutedEventArgs e)
     {
+        // Keep the search box in the focus order while suggestions are open so the user
+        // can dismiss the OSK with B and navigate the list with the d-pad.
+        if (ViewModel.Search.Suggestions.Count > 0)
+        {
+            return;
+        }
+
         SearchBox.IsTabStop = false;
+    }
+
+    private void MainPage_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (!IsSearchSuggestionsActive())
+        {
+            return;
+        }
+
+        if (GamepadInput.IsBackKey(e.Key))
+        {
+            // On Xbox, dismissing the OSK with B fires QuerySubmitted for the first suggestion.
+            SuppressQuerySubmitted(OskDismissQuerySubmitSuppressWindow);
+            return;
+        }
+
+        if (GamepadInput.IsAcceptKey(e.Key) && TryGetFocusedSuggestion(out SearchSuggestion? suggestion))
+        {
+            // Handle gamepad selection here instead of SuggestionChosen, which throws
+            // InvalidCastException for custom suggestion items inside AutoSuggestBox on Xbox.
+            e.Handled = true;
+            OpenSearchSuggestion(suggestion);
+        }
+    }
+
+    private void SearchSuggestionItem_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is SearchSuggestion suggestion)
+        {
+            e.Handled = true;
+            OpenSearchSuggestion(suggestion);
+        }
     }
 
     private void CloseNavigation(object sender, TappedRoutedEventArgs e)
@@ -159,15 +206,15 @@ internal sealed partial class MainPage : Page
     {
         if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
         {
+            ClearQuerySubmittedSuppression();
             ViewModel.Search.Query = sender.Text ?? string.Empty;
         }
     }
 
     private void SearchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
-        if (_ignoreNextQuerySubmitted)
+        if (IsQuerySubmittedSuppressed())
         {
-            _ignoreNextQuerySubmitted = false;
             return;
         }
 
@@ -180,29 +227,26 @@ internal sealed partial class MainPage : Page
         ViewModel.Search.SubmitQuery(args.QueryText);
     }
 
-    private void SearchBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
-    {
-        if (args.SelectedItem is SearchSuggestion suggestion)
-        {
-            OpenSearchSuggestion(suggestion);
-        }
-    }
-
     private void OpenSearchSuggestion(SearchSuggestion suggestion)
     {
-        _ignoreNextQuerySubmitted = true;
+        SuppressQuerySubmitted(SuggestionPickQuerySubmitSuppressWindow);
+        ViewModel.Search.SelectSuggestion(suggestion);
+    }
 
-        _suppressSearchTextSync = true;
-        try
+    private bool IsQuerySubmittedSuppressed()
+        => DateTimeOffset.UtcNow < _suppressQuerySubmittedUntil;
+
+    private void SuppressQuerySubmitted(TimeSpan window)
+    {
+        DateTimeOffset until = DateTimeOffset.UtcNow + window;
+        if (until > _suppressQuerySubmittedUntil)
         {
-            SearchBox.Text = string.Empty;
-            ViewModel.Search.SelectSuggestion(suggestion);
-        }
-        finally
-        {
-            _suppressSearchTextSync = false;
+            _suppressQuerySubmittedUntil = until;
         }
     }
+
+    private void ClearQuerySubmittedSuppression()
+        => _suppressQuerySubmittedUntil = DateTimeOffset.MinValue;
 
     private void ClearSearchField()
     {
@@ -221,6 +265,51 @@ internal sealed partial class MainPage : Page
         {
             _suppressSearchTextSync = false;
         }
+    }
+
+    private bool IsSearchSuggestionsActive()
+    {
+        if (ViewModel.Search.Suggestions.Count == 0)
+        {
+            return false;
+        }
+
+        return IsSearchBoxFocused() || TryGetFocusedSuggestion(out _);
+    }
+
+    private bool IsSearchBoxFocused()
+    {
+        for (DependencyObject? current = FocusManager.GetFocusedElement() as DependencyObject;
+             current is not null;
+             current = VisualTreeHelper.GetParent(current))
+        {
+            if (current == SearchBox)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryGetFocusedSuggestion([NotNullWhen(true)] out SearchSuggestion? suggestion)
+    {
+        suggestion = null;
+        if (FocusManager.GetFocusedElement() is not DependencyObject focused)
+        {
+            return false;
+        }
+
+        for (DependencyObject? current = focused; current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            if (current is FrameworkElement { DataContext: SearchSuggestion context })
+            {
+                suggestion = context;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     internal sealed record Parameters(Action DeferredNavigationAction);
