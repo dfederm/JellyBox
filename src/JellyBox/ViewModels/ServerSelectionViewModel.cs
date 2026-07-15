@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using JellyBox.Services;
 using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
+using Microsoft.Extensions.Logging;
 
 namespace JellyBox.ViewModels;
 
@@ -10,6 +11,7 @@ namespace JellyBox.ViewModels;
 internal sealed partial class ServerSelectionViewModel : ObservableObject
 #pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
+    private readonly ILogger<ServerSelectionViewModel> _logger;
     private readonly AppSettings _appSettings;
     private readonly JellyfinSdkSettings _sdkClientSettings;
     private readonly JellyfinApiClient _jellyfinApiClient;
@@ -25,11 +27,13 @@ internal sealed partial class ServerSelectionViewModel : ObservableObject
     public partial string ServerUrl { get; set; } = string.Empty;
 
     public ServerSelectionViewModel(
+        ILogger<ServerSelectionViewModel> logger,
         AppSettings appSettings,
         JellyfinSdkSettings sdkClientSettings,
         JellyfinApiClient jellyfinApiClient,
         NavigationManager navigationManager)
     {
+        _logger = logger;
         _appSettings = appSettings;
         _sdkClientSettings = sdkClientSettings;
         _jellyfinApiClient = jellyfinApiClient;
@@ -73,16 +77,12 @@ internal sealed partial class ServerSelectionViewModel : ObservableObject
         {
             // Get public system info to verify that the URL points to a Jellyfin server.
             PublicSystemInfo? systemInfo = await _jellyfinApiClient.System.Info.Public.GetAsync();
-            Console.WriteLine($"Connected to {serverUrl}");
-            Console.WriteLine($"Server Name: {systemInfo?.ServerName}");
-            Console.WriteLine($"Server Version: {systemInfo?.Version}");
+            LogConnectedToServer(serverUrl, systemInfo?.ServerName, systemInfo?.Version);
         }
         catch (Exception ex)
         {
             UpdateErrorMessage("We're unable to connect to the selected server right now. Please ensure it is running and try again.");
-#pragma warning disable CA1849 // Call async methods when in an async method
-            Console.Error.WriteLine($"Error connecting to {serverUrl}: {ex.Message}");
-#pragma warning restore CA1849 // Call async methods when in an async method
+            LogServerConnectionFailed(ex, serverUrl);
             return;
         }
 
@@ -101,4 +101,10 @@ internal sealed partial class ServerSelectionViewModel : ObservableObject
         ShowErrorMessage = true;
         ErrorMessage = message;
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Connected to server {ServerUrl} (Name: {ServerName}, Version: {ServerVersion}).")]
+    private partial void LogConnectedToServer(string serverUrl, string? serverName, string? serverVersion);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to connect to server {ServerUrl}.")]
+    private partial void LogServerConnectionFailed(Exception exception, string serverUrl);
 }

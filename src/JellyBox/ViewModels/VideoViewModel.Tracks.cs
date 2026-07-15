@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.Input;
 using JellyBox.Controls;
 using JellyBox.Services;
@@ -114,7 +113,7 @@ internal sealed partial class VideoViewModel
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Error in OnTimedMetadataTracksChanged: {ex}");
+                    LogSubtitlePresentationError(ex);
                 }
             });
     }
@@ -135,8 +134,7 @@ internal sealed partial class VideoViewModel
         int? uwpIndex = GetSubtitleUwpIndex(selectedIndex);
         if (!uwpIndex.HasValue || uwpIndex.Value >= playbackItem.TimedMetadataTracks.Count)
         {
-            Debug.WriteLine(
-                $"Subtitle UWP index out of range for Jellyfin index {selectedIndex} (uwp={uwpIndex}, count={playbackItem.TimedMetadataTracks.Count}).");
+            LogSubtitleIndexOutOfRange(selectedIndex, uwpIndex, playbackItem.TimedMetadataTracks.Count);
             return;
         }
 
@@ -168,12 +166,12 @@ internal sealed partial class VideoViewModel
             && track.UwpTrackIndex.Value < _currentPlaybackItem.AudioTracks.Count)
         {
             _currentPlaybackItem.AudioTracks.SelectedIndex = track.UwpTrackIndex.Value;
-            Debug.WriteLine($"Seamless audio track switch to Jellyfin index {track.JellyfinIndex} (UWP index {track.UwpTrackIndex})");
+            LogSeamlessAudioSwitch(track.JellyfinIndex, track.UwpTrackIndex);
             return;
         }
 
         // Fall back to restarting playback (e.g., for transcoding scenarios)
-        Debug.WriteLine($"Restarting playback for audio track {track.JellyfinIndex}");
+        LogRestartForAudioTrack(track.JellyfinIndex);
         RestartPlaybackWithCurrentPosition();
     }
 
@@ -192,14 +190,12 @@ internal sealed partial class VideoViewModel
         if (canSeamlessSwitch)
         {
             PresentSelectedSubtitleTrack(_currentPlaybackItem!);
-            Debug.WriteLine(track.UwpTrackIndex.HasValue
-                ? $"Seamless subtitle switch to Jellyfin index {track.JellyfinIndex} (UWP index {track.UwpTrackIndex})"
-                : "Subtitles disabled");
+            LogSeamlessSubtitleSwitch(track.JellyfinIndex, track.UwpTrackIndex);
             return;
         }
 
         // Fall back to restarting playback (e.g., switching unloaded external tracks, transcoding, unsupported formats)
-        Debug.WriteLine($"Restarting playback for subtitle track {track.JellyfinIndex}");
+        LogRestartForSubtitleTrack(track.JellyfinIndex);
         RestartPlaybackWithCurrentPosition();
     }
 

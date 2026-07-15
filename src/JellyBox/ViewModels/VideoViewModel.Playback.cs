@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.Input;
 using JellyBox.Controls;
 using JellyBox.Services;
@@ -24,6 +23,8 @@ internal sealed partial class VideoViewModel
             _cachedMaxStreamingBitrate = null;
             BaseItemDto item = _currentItem;
             _playerElement = playerElement;
+
+            LogPlaybackStarting(item.Name, item.Id ?? Guid.Empty);
 
             // Bind commands to transport controls
             _transportControls.PlayPauseCommand = TogglePlayPauseCommand;
@@ -134,7 +135,7 @@ internal sealed partial class VideoViewModel
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error in PlayVideo: {ex}");
+            LogPlaybackError(ex, _currentItem?.Name);
         }
     }
 
@@ -145,6 +146,8 @@ internal sealed partial class VideoViewModel
             _progressTimer.Stop();
 
             UpdatePositionTicks();
+
+            LogPlaybackStopped(_currentItem?.Name, _playbackProgressInfo?.PositionTicks ?? 0);
 
             MediaPlayer? player = _playerElement?.MediaPlayer;
             if (player is not null)
@@ -188,7 +191,7 @@ internal sealed partial class VideoViewModel
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error in StopVideo: {ex}");
+            LogPlaybackError(ex, _currentItem?.Name);
         }
     }
 
@@ -207,7 +210,7 @@ internal sealed partial class VideoViewModel
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error restarting playback: {ex}");
+            LogRestartPlaybackError(ex);
         }
     }
 
@@ -233,6 +236,7 @@ internal sealed partial class VideoViewModel
 
         if (mediaSourceInfo is null)
         {
+            LogNoMediaSource(_currentItem.Id ?? Guid.Empty);
             return;
         }
 
@@ -288,7 +292,7 @@ internal sealed partial class VideoViewModel
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error in ToggleFavoriteAsync: {ex}");
+            LogToggleFavoriteError(ex);
         }
     }
 }

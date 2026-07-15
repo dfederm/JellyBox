@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Jellyfin.Sdk.Generated.Models;
@@ -168,7 +167,7 @@ internal sealed partial class LibraryViewModel
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error loading filter values: {ex}");
+            LogFilterValuesFailed(ex);
         }
     }
 

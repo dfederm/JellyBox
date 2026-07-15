@@ -1,9 +1,9 @@
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using JellyBox.Services;
 using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
+using Microsoft.Extensions.Logging;
 using Windows.ApplicationModel.Core;
 using Windows.System.Threading;
 using Windows.UI.Core;
@@ -17,6 +17,7 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
 {
     private static readonly TimeSpan QuickConnectPollingInterval = TimeSpan.FromSeconds(5);
 
+    private readonly ILogger<LoginViewModel> _logger;
     private readonly AppSettings _appSettings;
     private readonly JellyfinSdkSettings _sdkClientSettings;
     private readonly JellyfinApiClient _jellyfinApiClient;
@@ -43,11 +44,13 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
     public partial string Password { get; set; } = string.Empty;
 
     public LoginViewModel(
+        ILogger<LoginViewModel> logger,
         AppSettings appSettings,
         JellyfinSdkSettings sdkClientSettings,
         JellyfinApiClient jellyfinApiClient,
         NavigationManager navigationManager)
     {
+        _logger = logger;
         _appSettings = appSettings;
         _sdkClientSettings = sdkClientSettings;
         _jellyfinApiClient = jellyfinApiClient;
@@ -69,7 +72,7 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error in LoginViewModel.Initialize: {ex}");
+            LogQuickConnectAvailabilityFailed(ex);
         }
     }
 
@@ -93,7 +96,7 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
                 return;
             }
 
-            Console.WriteLine($"Logging into {_sdkClientSettings.ServerUrl}");
+            LogSigningIn(_sdkClientSettings.ServerUrl);
 
             AuthenticateUserByName request = new()
             {
@@ -106,7 +109,7 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Login failed: {ex}");
+            LogSignInFailed(ex);
             UpdateErrorMessage(GetFriendlyErrorMessage(ex));
             return;
         }
@@ -178,7 +181,7 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
                 {
                     // Timer callbacks with async void can crash the app if exceptions propagate.
                     // Log and suppress to prevent app termination.
-                    Debug.WriteLine($"Error in PollQuickConnectAsync: {ex}");
+                    LogQuickConnectPollFailed(ex);
                 }
             }
 
@@ -186,7 +189,7 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Quick Connect failed: {ex}");
+            LogQuickConnectFailed(ex);
             UpdateErrorMessage(GetFriendlyErrorMessage(ex));
             return;
         }
@@ -208,6 +211,7 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
         string? accessToken = authenticationResult?.AccessToken;
         if (accessToken is null)
         {
+            LogAuthenticationFailed();
             UpdateErrorMessage("Authentication failed. Please try again.");
             return false;
         }
@@ -217,7 +221,7 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
 
         _sdkClientSettings.SetAccessToken(accessToken);
 
-        Console.WriteLine("Authentication success.");
+        LogAuthenticationSucceeded();
 
         _navigationManager.NavigateToHome();
 
@@ -240,4 +244,25 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
             TaskCanceledException => "The request timed out. Please try again.",
             _ => "An error occurred during login. Please try again.",
         };
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Signing in to {ServerUrl}.")]
+    private partial void LogSigningIn(string? serverUrl);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Authentication succeeded.")]
+    private partial void LogAuthenticationSucceeded();
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Authentication failed: no access token returned.")]
+    private partial void LogAuthenticationFailed();
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to sign in.")]
+    private partial void LogSignInFailed(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to determine Quick Connect availability.")]
+    private partial void LogQuickConnectAvailabilityFailed(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to poll Quick Connect status.")]
+    private partial void LogQuickConnectPollFailed(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to sign in with Quick Connect.")]
+    private partial void LogQuickConnectFailed(Exception exception);
 }

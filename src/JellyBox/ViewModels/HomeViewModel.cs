@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using JellyBox.Models;
 using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
+using Microsoft.Extensions.Logging;
 
 namespace JellyBox.ViewModels;
 
@@ -9,6 +10,7 @@ namespace JellyBox.ViewModels;
 internal sealed partial class HomeViewModel : ObservableObject, ILoadingViewModel
 #pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
+    private readonly ILogger<HomeViewModel> _logger;
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly CardFactory _cardFactory;
     private readonly CancellableLoad _load = new();
@@ -20,9 +22,11 @@ internal sealed partial class HomeViewModel : ObservableObject, ILoadingViewMode
     public partial IReadOnlyList<Section>? Sections { get; set; }
 
     public HomeViewModel(
+        ILogger<HomeViewModel> logger,
         JellyfinApiClient jellyfinApiClient,
         CardFactory cardFactory)
     {
+        _logger = logger;
         _jellyfinApiClient = jellyfinApiClient;
         _cardFactory = cardFactory;
     }
@@ -65,7 +69,7 @@ internal sealed partial class HomeViewModel : ObservableObject, ILoadingViewMode
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in HomeViewModel.Initialize: {ex}");
+            LogLoadFailed(ex);
         }
         finally
         {
@@ -131,4 +135,7 @@ internal sealed partial class HomeViewModel : ObservableObject, ILoadingViewMode
             Cards = cards,
         };
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to load home sections.")]
+    private partial void LogLoadFailed(Exception exception);
 }

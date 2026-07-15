@@ -8,6 +8,7 @@ using JellyBox.Services;
 using JellyBox.Views;
 using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
+using Microsoft.Extensions.Logging;
 
 namespace JellyBox.ViewModels;
 
@@ -24,6 +25,7 @@ internal sealed record MediaSourceInfoWrapper(string DisplayText, MediaSourceInf
 internal sealed partial class ItemDetailsViewModel : ObservableObject
 #pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
+    private readonly ILogger<ItemDetailsViewModel> _logger;
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly JellyfinImageResolver _imageResolver;
     private readonly NavigationManager _navigationManager;
@@ -133,11 +135,13 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
     public partial bool HasTrailer { get; set; }
 
     public ItemDetailsViewModel(
+        ILogger<ItemDetailsViewModel> logger,
         JellyfinApiClient jellyfinApiClient,
         JellyfinImageResolver imageResolver,
         NavigationManager navigationManager,
         CardFactory cardFactory)
     {
+        _logger = logger;
         _jellyfinApiClient = jellyfinApiClient;
         _imageResolver = imageResolver;
         _navigationManager = navigationManager;
@@ -273,7 +277,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in ItemDetailsViewModel.LoadAsync: {ex}");
+            LogLoadFailed(ex);
         }
     }
 
@@ -292,7 +296,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in OnSelectedSourceContainerChanged: {ex}");
+            LogSourceOptionsFailed(ex);
         }
     }
 
@@ -505,7 +509,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in PlayTrailer: {ex}");
+            LogPlayTrailerFailed(ex);
         }
     }
 
@@ -525,7 +529,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in TogglePlayed: {ex}");
+            LogTogglePlayedFailed(ex);
         }
     }
 
@@ -545,7 +549,7 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Error in ToggleFavorite: {ex}");
+            LogToggleFavoriteFailed(ex);
         }
     }
 
@@ -891,4 +895,19 @@ internal sealed partial class ItemDetailsViewModel : ObservableObject
             static int Compare(bool x, bool y) => (x ? 1 : 0) - (y ? 1 : 0);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to load item details.")]
+    private partial void LogLoadFailed(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to update media source options.")]
+    private partial void LogSourceOptionsFailed(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to play trailer.")]
+    private partial void LogPlayTrailerFailed(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to toggle played state.")]
+    private partial void LogTogglePlayedFailed(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to toggle favorite state.")]
+    private partial void LogToggleFavoriteFailed(Exception exception);
 }
