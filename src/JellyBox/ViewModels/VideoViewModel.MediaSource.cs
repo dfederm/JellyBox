@@ -148,7 +148,7 @@ internal sealed partial class VideoViewModel
 
         if (!IsSubtitleFormatSupported(subtitleTrack))
         {
-            Debug.WriteLine($"Skipping unsupported external subtitle format: {subtitleTrack.Codec} (index {subtitleTrack.Index})");
+            LogSkippingUnsupportedSubtitle(subtitleTrack.Codec, subtitleTrack.Index);
             return;
         }
 
@@ -159,13 +159,13 @@ internal sealed partial class VideoViewModel
             string? subtitleUrl = subtitleTrack.DeliveryUrl;
             if (string.IsNullOrEmpty(subtitleUrl))
             {
-                Debug.WriteLine($"Subtitle track {subtitleTrack.Index} has no delivery URL.");
+                LogSubtitleNoDeliveryUrl(subtitleTrack.Index);
                 return;
             }
 
             TimedTextSource timedTextSource = TimedTextSource.CreateFromUri(new Uri(subtitleUrl), language);
             mediaSource.ExternalTimedTextSources.Add(timedTextSource);
-            Debug.WriteLine($"Added third-party external subtitle (index {subtitleTrack.Index}): {subtitleUrl}");
+            LogAddedThirdPartySubtitle(subtitleTrack.Index, subtitleUrl);
             return;
         }
 
@@ -192,11 +192,11 @@ internal sealed partial class VideoViewModel
 
             TimedTextSource timedTextSource = TimedTextSource.CreateFromStream(stream, language);
             mediaSource.ExternalTimedTextSources.Add(timedTextSource);
-            Debug.WriteLine($"Added Jellyfin-hosted external subtitle from stream (index {subtitleTrack.Index})");
+            LogAddedJellyfinSubtitle(subtitleTrack.Index);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to download subtitle stream (index {subtitleTrack.Index}): {ex.Message}");
+            LogSubtitleDownloadFailed(ex, subtitleTrack.Index);
         }
     }
 
@@ -296,7 +296,7 @@ internal sealed partial class VideoViewModel
         double responseTimeSeconds = ((double)(Stopwatch.GetTimestamp() - startTime)) / Stopwatch.Frequency;
         double bytesPerSecond = totalBytesRead / responseTimeSeconds;
         int bitrate = (int)Math.Round(bytesPerSecond * 8 * SafetyRatio);
-        Debug.WriteLine($"Downloaded {totalBytesRead} bytes in {responseTimeSeconds:F2}s. Using max bitrate of {bitrate}");
+        LogMeasuredBitrate(totalBytesRead, responseTimeSeconds, bitrate);
         _cachedMaxStreamingBitrate = bitrate;
         return bitrate;
     }

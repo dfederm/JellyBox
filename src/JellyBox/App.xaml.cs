@@ -2,6 +2,7 @@
 using JellyBox.Views;
 using Jellyfin.Sdk;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
@@ -20,6 +21,7 @@ namespace JellyBox;
 sealed partial class App : Application
 #pragma warning restore CA1515 // Consider making public types internal
 {
+    private readonly ILogger _logger;
     private readonly AppSettings _appSettings;
     private readonly JellyfinSdkSettings _sdkClientSettings;
     private readonly NavigationManager _navigationManager;
@@ -33,6 +35,7 @@ sealed partial class App : Application
     {
         ConfigureWebView2();
 
+        _logger = AppServices.Instance.ServiceProvider.GetRequiredService<ILogger<App>>();
         _appSettings = AppServices.Instance.ServiceProvider.GetRequiredService<AppSettings>();
         _sdkClientSettings = AppServices.Instance.ServiceProvider.GetRequiredService<JellyfinSdkSettings>();
         _navigationManager = AppServices.Instance.ServiceProvider.GetRequiredService<NavigationManager>();
@@ -41,6 +44,7 @@ sealed partial class App : Application
         InitializeComponent();
 
         UnhandledException += OnUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
         Current.RequiresPointerMode = ApplicationRequiresPointerMode.WhenRequested;
 
@@ -49,17 +53,31 @@ sealed partial class App : Application
 
     private void OnUnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
     {
-        System.Diagnostics.Debug.WriteLine($"Unhandled UI exception: {e.Exception}");
-        if (e.Exception.InnerException is not null)
-        {
-            System.Diagnostics.Debug.WriteLine($"Inner exception: {e.Exception.InnerException}");
-        }
+        LogUnhandledException(e.Exception);
+        FlushLogs();
     }
+
+    private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        LogUnobservedTaskException(e.Exception);
+        FlushLogs();
+
+        // Prevent the process from terminating on unobserved task exceptions.
+        e.SetObserved();
+    }
+
+    // Drain the file logger synchronously so the latest entries survive a crash or suspension.
+    private static void FlushLogs()
+        => AppServices.Instance.ServiceProvider
+            .GetRequiredService<FileLoggerProvider>()
+            .Flush(TimeSpan.FromSeconds(2));
 
     /// <inheritdoc/>
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         ArgumentNullException.ThrowIfNull(args);
+
+        LogApplicationLaunched(args.PreviousExecutionState);
 
         Frame? rootFrame = Window.Current.Content as Frame;
 
@@ -141,7 +159,7 @@ sealed partial class App : Application
         catch (Exception ex)
         {
             // Log initialization failure but don't crash the app - playback will handle missing profile gracefully
-            System.Diagnostics.Debug.WriteLine($"Failed to initialize device profile: {ex}");
+            LogDeviceProfileInitializationFailed(ex);
         }
     }
 
@@ -168,7 +186,10 @@ sealed partial class App : Application
     {
         SuspendingDeferral deferral = e.SuspendingOperation.GetDeferral();
 
+        LogApplicationSuspending();
+
         // TODO: Save application state and stop any background activity
+        FlushLogs();
         deferral.Complete();
     }
 
@@ -180,4 +201,19 @@ sealed partial class App : Application
         // Avoid flashbang before loading the uri by setting the default background color to be transparent.
         Environment.SetEnvironmentVariable("WEBVIEW2_DEFAULT_BACKGROUND_COLOR", "00FFFFFF");
     }
+
+    [LoggerMessage(Level = LogLevel.Critical, Message = "Unhandled exception.")]
+    private partial void LogUnhandledException(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Unobserved task exception.")]
+    private partial void LogUnobservedTaskException(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to initialize device profile.")]
+    private partial void LogDeviceProfileInitializationFailed(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Application launched (previous execution state: {PreviousExecutionState}).")]
+    private partial void LogApplicationLaunched(ApplicationExecutionState previousExecutionState);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Application suspending.")]
+    private partial void LogApplicationSuspending();
 }

@@ -1,9 +1,9 @@
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using JellyBox.Models;
 using JellyBox.Views;
 using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
+using Microsoft.Extensions.Logging;
 
 namespace JellyBox.ViewModels;
 
@@ -13,6 +13,7 @@ internal sealed partial class SearchViewModel : ObservableObject, ILoadingViewMo
 {
     private const int ResultLimit = 100;
 
+    private readonly ILogger<SearchViewModel> _logger;
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly CardFactory _cardFactory;
     private readonly CancellableLoad _load = new();
@@ -36,9 +37,11 @@ internal sealed partial class SearchViewModel : ObservableObject, ILoadingViewMo
     public partial IReadOnlyList<Card>? Items { get; private set; }
 
     public SearchViewModel(
+        ILogger<SearchViewModel> logger,
         JellyfinApiClient jellyfinApiClient,
         CardFactory cardFactory)
     {
+        _logger = logger;
         _jellyfinApiClient = jellyfinApiClient;
         _cardFactory = cardFactory;
     }
@@ -116,7 +119,7 @@ internal sealed partial class SearchViewModel : ObservableObject, ILoadingViewMo
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error in SearchViewModel.LoadResultsAsync: {ex}");
+            LogLoadResultsFailed(ex);
             Items = [];
             ShowEmptyState = true;
             ResultsSubtitle = "Something went wrong while searching. Please try again.";
@@ -129,4 +132,7 @@ internal sealed partial class SearchViewModel : ObservableObject, ILoadingViewMo
             }
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to load search results.")]
+    private partial void LogLoadResultsFailed(Exception exception);
 }

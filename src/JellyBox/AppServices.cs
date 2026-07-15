@@ -32,13 +32,16 @@ internal sealed class AppServices
 
         serviceCollection.AddLogging(builder =>
         {
-            // TODO: Set up better logging
             builder.AddSimpleConsole(options =>
             {
                 options.IncludeScopes = true;
                 options.SingleLine = true;
                 options.TimestampFormat = "HH:mm:ss ";
             });
+
+            // Persist logs to a file under the app's local data folder so they survive on a
+            // sideloaded Xbox/UWP install where console output isn't available.
+            builder.AddFileLogger();
         });
 
         serviceCollection.AddHttpClient(

@@ -1,10 +1,10 @@
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using JellyBox.Models;
 using JellyBox.Services;
 using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
+using Microsoft.Extensions.Logging;
 
 namespace JellyBox.ViewModels;
 
@@ -16,6 +16,7 @@ internal sealed partial class ShellSearchViewModel : ObservableObject
     private const int SuggestionLimit = 8;
     private static readonly TimeSpan DebounceDelay = TimeSpan.FromMilliseconds(350);
 
+    private readonly ILogger<ShellSearchViewModel> _logger;
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly NavigationManager _navigationManager;
     private int _searchVersion;
@@ -27,9 +28,11 @@ internal sealed partial class ShellSearchViewModel : ObservableObject
     public ObservableCollection<SearchSuggestion> Suggestions { get; } = [];
 
     public ShellSearchViewModel(
+        ILogger<ShellSearchViewModel> logger,
         JellyfinApiClient jellyfinApiClient,
         NavigationManager navigationManager)
     {
+        _logger = logger;
         _jellyfinApiClient = jellyfinApiClient;
         _navigationManager = navigationManager;
     }
@@ -131,7 +134,7 @@ internal sealed partial class ShellSearchViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error in ShellSearchViewModel.UpdateSuggestionsAsync: {ex}");
+            LogUpdateSuggestionsFailed(ex);
             ReplaceSuggestions([]);
         }
     }
@@ -164,4 +167,7 @@ internal sealed partial class ShellSearchViewModel : ObservableObject
 
         return new SearchSuggestion(hint.Name, secondaryText, hint.Id.Value);
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to update search suggestions.")]
+    private partial void LogUpdateSuggestionsFailed(Exception exception);
 }

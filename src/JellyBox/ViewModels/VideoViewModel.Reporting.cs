@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Jellyfin.Sdk.Generated.Models;
 using Windows.Media.Playback;
 
@@ -87,7 +86,7 @@ internal sealed partial class VideoViewModel
         {
             // Timer callbacks with async void can crash the app if exceptions propagate.
             // Log and suppress to prevent app termination.
-            Debug.WriteLine($"Error in TimerTick: {ex}");
+            LogProgressReportError(ex);
         }
     }
 }

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text;
 using CommunityToolkit.Mvvm.Input;
 using Jellyfin.Sdk.Generated.Models;
@@ -208,7 +207,7 @@ internal sealed partial class VideoViewModel
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error showing playback info: {ex}");
+            LogPlaybackInfoDialogError(ex);
         }
     }
 

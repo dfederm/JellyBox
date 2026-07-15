@@ -1,7 +1,7 @@
-using System.Diagnostics;
 using JellyBox.Views;
 using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
+using Microsoft.Extensions.Logging;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Core;
 using Windows.System;
@@ -14,7 +14,7 @@ using Windows.UI.Xaml.Input;
 namespace JellyBox.Services;
 
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes. Used via dependency injection.
-internal sealed class NavigationManager
+internal sealed partial class NavigationManager
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes
 {
     // Fake item id used to identify the home page
@@ -47,9 +47,11 @@ internal sealed class NavigationManager
     private object? _currentContentParameter;
 
     private readonly JellyfinApiClient _jellyfinApiClient;
+    private readonly ILogger<NavigationManager> _logger;
 
-    public NavigationManager(JellyfinApiClient jellyfinApiClient)
+    public NavigationManager(ILogger<NavigationManager> logger, JellyfinApiClient jellyfinApiClient)
     {
+        _logger = logger;
         _jellyfinApiClient = jellyfinApiClient;
     }
 
@@ -148,7 +150,7 @@ internal sealed class NavigationManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error in NavigationManager.NavigateToItemAsync: {ex}");
+            LogNavigateToItemFailed(ex, itemId);
         }
     }
 
@@ -208,7 +210,7 @@ internal sealed class NavigationManager
         }
     }
 
-    private static void NavigateFrame<TPage>(Frame frame, ref object? currentParameter, object? parameter = null)
+    private void NavigateFrame<TPage>(Frame frame, ref object? currentParameter, object? parameter = null)
     {
         // Only navigate if the selected page isn't currently loaded with the same parameter.
         Type pageType = typeof(TPage);
@@ -217,6 +219,7 @@ internal sealed class NavigationManager
             return;
         }
 
+        LogNavigating(pageType.Name);
         currentParameter = parameter;
         frame.Navigate(pageType, parameter);
     }
@@ -401,4 +404,10 @@ internal sealed class NavigationManager
             }
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Navigating to {PageType}.")]
+    private partial void LogNavigating(string pageType);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to navigate to item {ItemId}.")]
+    private partial void LogNavigateToItemFailed(Exception exception, Guid itemId);
 }

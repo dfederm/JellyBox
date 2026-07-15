@@ -1,9 +1,9 @@
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using JellyBox.Models;
 using JellyBox.Views;
 using Jellyfin.Sdk;
 using Jellyfin.Sdk.Generated.Models;
+using Microsoft.Extensions.Logging;
 
 namespace JellyBox.ViewModels;
 
@@ -11,6 +11,7 @@ namespace JellyBox.ViewModels;
 internal sealed partial class LibraryViewModel : ObservableObject, ILoadingViewModel
 #pragma warning restore CA1812 // Avoid uninstantiated internal classes
 {
+    private readonly ILogger<LibraryViewModel> _logger;
     private readonly AppSettings _appSettings;
     private readonly JellyfinApiClient _jellyfinApiClient;
     private readonly CardFactory _cardFactory;
@@ -31,10 +32,12 @@ internal sealed partial class LibraryViewModel : ObservableObject, ILoadingViewM
     public partial IReadOnlyList<Card>? Items { get; set; }
 
     public LibraryViewModel(
+        ILogger<LibraryViewModel> logger,
         AppSettings appSettings,
         JellyfinApiClient jellyfinApiClient,
         CardFactory cardFactory)
     {
+        _logger = logger;
         _appSettings = appSettings;
         _jellyfinApiClient = jellyfinApiClient;
         _cardFactory = cardFactory;
@@ -82,7 +85,7 @@ internal sealed partial class LibraryViewModel : ObservableObject, ILoadingViewM
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error in LibraryViewModel.InitializeAsync: {ex}");
+            LogInitializeFailed(ex);
         }
         finally
         {
@@ -113,7 +116,7 @@ internal sealed partial class LibraryViewModel : ObservableObject, ILoadingViewM
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error in LibraryViewModel.RefreshAsync: {ex}");
+            LogRefreshFailed(ex);
         }
         finally
         {
@@ -210,4 +213,13 @@ internal sealed partial class LibraryViewModel : ObservableObject, ILoadingViewM
         static string[] GetSelectedLabels(List<FilterItem> filters)
             => [.. filters.Where(f => f.IsSelected).Select(f => f.Label)];
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to initialize library.")]
+    private partial void LogInitializeFailed(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to refresh library.")]
+    private partial void LogRefreshFailed(Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Failed to load library filter values.")]
+    private partial void LogFilterValuesFailed(Exception exception);
 }
