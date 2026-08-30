@@ -1,4 +1,4 @@
-# Copilot Instructions for JellyBox
+# Repository Instructions for JellyBox
 
 Trust these instructions. Only search the codebase if the information here is incomplete or found to be incorrect.
 
