@@ -5,7 +5,7 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Blurhash.Core" Version="4.1.1" />
+    <PackageVersion Include="Blurhash.Core" Version="4.2.1" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageVersion Include="Jellyfin.Sdk" Version="2026.6.19-unstable.202606190139" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.11" />
