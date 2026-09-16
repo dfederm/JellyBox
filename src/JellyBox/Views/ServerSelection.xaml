@@ -5,6 +5,7 @@
     xmlns:local="using:JellyBox.Views"
     xmlns:Interactivity="using:Microsoft.Xaml.Interactivity"
     xmlns:Behaviors="using:JellyBox.Behaviors"
+    xmlns:controls="using:JellyBox.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
@@ -46,5 +47,8 @@
                     Style="{StaticResource PrimaryButton}"
                     HorizontalAlignment="Stretch" />
         </StackPanel>
+
+        <controls:LoadingOverlay
+            Visibility="{x:Bind ViewModel.ConnectCommand.IsRunning, Mode=OneWay}" />
     </Grid>
 </Page>
