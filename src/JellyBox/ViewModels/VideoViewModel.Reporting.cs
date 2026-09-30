@@ -53,14 +53,14 @@ internal sealed partial class VideoViewModel
         await _jellyfinApiClient.Sessions.Playing.Progress.PostAsync(_playbackProgressInfo);
     }
 
-    private void UpdatePositionTicks()
+    private void UpdatePositionTicks(MediaPlayer? player)
     {
-        if (_playbackProgressInfo is null || _playerElement is null)
+        if (_playbackProgressInfo is null || player is null)
         {
             return;
         }
 
-        long currentTicks = _playerElement.MediaPlayer.PlaybackSession.Position.Ticks;
+        long currentTicks = player.PlaybackSession.Position.Ticks;
         if (currentTicks < 0)
         {
             currentTicks = 0;
@@ -73,11 +73,11 @@ internal sealed partial class VideoViewModel
     {
         try
         {
-            UpdatePositionTicks();
+            MediaPlayer? player = _playerElement?.MediaPlayer;
+            UpdatePositionTicks(player);
 
             // Only report progress when playing.
-            if (_playerElement is not null
-                && _playerElement.MediaPlayer.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
+            if (player?.PlaybackSession.PlaybackState == MediaPlaybackState.Playing)
             {
                 await ReportProgressAsync();
             }
