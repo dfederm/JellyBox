@@ -22,6 +22,7 @@ internal sealed partial class VideoViewModel
             _currentItem = parameters.Item;
             _cachedMaxStreamingBitrate = null;
             BaseItemDto item = _currentItem;
+            SetDisplayRequestActive(false);
             _playerElement = playerElement;
 
             LogPlaybackStarting(item.Name, item.Id ?? Guid.Empty);
@@ -70,66 +71,95 @@ internal sealed partial class VideoViewModel
             };
 
 #pragma warning disable CA2000 // Dispose objects before losing scope. Disposed in StopVideo.
-            _playerElement.SetMediaPlayer(new MediaPlayer());
+            MediaPlayer player = new MediaPlayer();
+            _playerElement.SetMediaPlayer(player);
 #pragma warning restore CA2000 // Dispose objects before losing scope
 
             // Initialize volume state on transport controls
             UpdateTransportControlsVolumeState();
 
-            _playerElement.MediaPlayer.MediaEnded += async (mp, o) =>
+            player.MediaEnded += async (endedPlayer, o) =>
             {
-                await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
-                    CoreDispatcherPriority.Normal,
-                    UpdatePositionTicks);
-
-                await ReportStoppedAsync();
-            };
-
-            _playerElement.MediaPlayer.PlaybackSession.PlaybackStateChanged += async (session, obj) =>
-            {
-                if (session.PlaybackState == MediaPlaybackState.None)
-                {
-                    // The calls below throw in this scenario
-                    return;
-                }
-
-                if (session.PlaybackState == MediaPlaybackState.Playing && ShowBackdropImage)
-                {
-                    await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
-                        CoreDispatcherPriority.Normal,
-                        () => ShowBackdropImage = false);
-                }
-
-                _playbackProgressInfo.CanSeek = session.CanSeek;
-                _playbackProgressInfo.PositionTicks = session.Position.Ticks;
-
                 await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
                     CoreDispatcherPriority.Normal,
                     () =>
                     {
-                        // Update buffering state
-                        _transportControls.IsBuffering = session.PlaybackState == MediaPlaybackState.Buffering;
+                        if (!IsCurrentPlayer(player))
+                        {
+                            return;
+                        }
 
-                        if (session.PlaybackState == MediaPlaybackState.Playing)
-                        {
-                            _playbackProgressInfo.IsPaused = false;
-                            _transportControls.IsPlaying = true;
-                            UpdateEndsAtText();
-                        }
-                        else if (session.PlaybackState == MediaPlaybackState.Paused)
-                        {
-                            _playbackProgressInfo.IsPaused = true;
-                            _transportControls.IsPlaying = false;
-                        }
+                        UpdateDisplayRequest();
+                        UpdatePositionTicks(endedPlayer);
                     });
 
-                // TODO: Only update if something actually changed?
-                await ReportProgressAsync();
+                await ReportStoppedAsync();
             };
 
-            await StartPlaybackAsync(parameters.MediaSourceId, startPosition);
+            player.PlaybackSession.PlaybackStateChanged += async (session, obj) =>
+            {
+                try
+                {
+                    bool reportProgress = false;
+                    await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
+                        CoreDispatcherPriority.Normal,
+                        () =>
+                        {
+                            if (!IsCurrentPlayer(player))
+                            {
+                                return;
+                            }
+
+                            UpdateDisplayRequest();
+                            MediaPlaybackState state = session.PlaybackState;
+                            if (state == MediaPlaybackState.None)
+                            {
+                                return;
+                            }
+
+                            if (state == MediaPlaybackState.Playing)
+                            {
+                                ShowBackdropImage = false;
+                                _playbackProgressInfo.IsPaused = false;
+                                _transportControls.IsPlaying = true;
+                                UpdateEndsAtText();
+                            }
+                            else if (state == MediaPlaybackState.Paused)
+                            {
+                                _playbackProgressInfo.IsPaused = true;
+                                _transportControls.IsPlaying = false;
+                            }
+
+                            _transportControls.IsBuffering = state == MediaPlaybackState.Buffering;
+                            _playbackProgressInfo.CanSeek = session.CanSeek;
+                            _playbackProgressInfo.PositionTicks = session.Position.Ticks;
+                            reportProgress = true;
+                        });
+
+                    if (reportProgress)
+                    {
+                        await ReportProgressAsync();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogProgressReportError(ex);
+                }
+            };
+
+            player.MediaFailed += OnMediaFailed;
+
+            if (!await StartPlaybackAsync(player, parameters.MediaSourceId, startPosition)
+                || !IsCurrentPlayer(player))
+            {
+                return;
+            }
 
             await ReportStartedAsync();
+            if (!IsCurrentPlayer(player))
+            {
+                return;
+            }
 
             _progressTimer.Start();
         }
@@ -141,28 +171,33 @@ internal sealed partial class VideoViewModel
 
     public async void StopVideo()
     {
+        MediaPlayerElement? playerElement = _playerElement;
+        _playerElement = null;
+        SetDisplayRequestActive(false);
+
         try
         {
             _progressTimer.Stop();
 
-            UpdatePositionTicks();
+            MediaPlayer? stoppedPlayer = playerElement?.MediaPlayer;
+            UpdatePositionTicks(stoppedPlayer);
 
             LogPlaybackStopped(_currentItem?.Name, _playbackProgressInfo?.PositionTicks ?? 0);
 
-            MediaPlayer? player = _playerElement?.MediaPlayer;
-            if (player is not null)
+            if (stoppedPlayer is not null)
             {
-                player.Pause();
+                stoppedPlayer.MediaFailed -= OnMediaFailed;
+                stoppedPlayer.Pause();
 
-                MediaPlaybackItem mediaPlaybackItem = (MediaPlaybackItem)player.Source;
+                MediaPlaybackItem mediaPlaybackItem = (MediaPlaybackItem)stoppedPlayer.Source;
 
                 // Detach components from each other
-                _playerElement!.SetMediaPlayer(null);
-                player.Source = null;
+                playerElement!.SetMediaPlayer(null);
+                stoppedPlayer.Source = null;
 
                 // Dispose components
                 mediaPlaybackItem.Source.Dispose();
-                player.Dispose();
+                stoppedPlayer.Dispose();
             }
 
             // Clear command bindings
@@ -195,9 +230,12 @@ internal sealed partial class VideoViewModel
         }
     }
 
+    private bool IsCurrentPlayer(MediaPlayer player) => player == _playerElement?.MediaPlayer;
+
     private async void RestartPlaybackWithCurrentPosition()
     {
-        if (_playerElement?.MediaPlayer is null || _currentMediaSource is null)
+        MediaPlayer? player = _playerElement?.MediaPlayer;
+        if (player is null || _currentMediaSource is null)
         {
             return;
         }
@@ -205,8 +243,8 @@ internal sealed partial class VideoViewModel
         try
         {
             // Save current position before restarting
-            TimeSpan currentPosition = _playerElement.MediaPlayer.PlaybackSession.Position;
-            await StartPlaybackAsync(_currentMediaSource.Id, currentPosition);
+            TimeSpan currentPosition = player.PlaybackSession.Position;
+            await StartPlaybackAsync(player, _currentMediaSource.Id, currentPosition);
         }
         catch (Exception ex)
         {
@@ -217,13 +255,14 @@ internal sealed partial class VideoViewModel
     /// <summary>
     /// Starts or restarts playback with the specified media source and position.
     /// </summary>
+    /// <param name="player">The player to start if it is still current.</param>
     /// <param name="mediaSourceId">The media source ID to play.</param>
     /// <param name="startPosition">The position to start playback from.</param>
-    private async Task StartPlaybackAsync(string? mediaSourceId, TimeSpan startPosition)
+    private async Task<bool> StartPlaybackAsync(MediaPlayer player, string? mediaSourceId, TimeSpan startPosition)
     {
-        if (_currentItem is null || _playbackProgressInfo is null)
+        if (_currentItem is null || _playbackProgressInfo is null || !IsCurrentPlayer(player))
         {
-            return;
+            return false;
         }
 
         // Get playback info with current track selections
@@ -237,7 +276,7 @@ internal sealed partial class VideoViewModel
         if (mediaSourceInfo is null)
         {
             LogNoMediaSource(_currentItem.Id ?? Guid.Empty);
-            return;
+            return false;
         }
 
         _currentMediaSource = mediaSourceInfo;
@@ -253,7 +292,7 @@ internal sealed partial class VideoViewModel
         MediaPlaybackItem? playbackItem = await CreatePlaybackItemAsync(mediaSourceInfo, startPosition);
         if (playbackItem is null)
         {
-            return;
+            return false;
         }
 
         // Set display mode based on video stream properties (may change on restart if transcoding)
@@ -265,8 +304,37 @@ internal sealed partial class VideoViewModel
             videoStream.VideoRangeType!.Value);
 
         // Start playback
+        if (!IsCurrentPlayer(player))
+        {
+            return false;
+        }
+
         _playerElement!.Source = playbackItem;
-        _playerElement.MediaPlayer!.Play();
+        player.Play();
+        return true;
+    }
+
+    private async void OnMediaFailed(MediaPlayer failedPlayer, MediaPlayerFailedEventArgs args)
+    {
+        try
+        {
+            await CoreApplication.MainView.CoreWindow.Dispatcher.RunAsync(
+                CoreDispatcherPriority.Normal,
+                () =>
+                {
+                    if (!IsCurrentPlayer(failedPlayer))
+                    {
+                        return;
+                    }
+
+                    UpdateDisplayRequest();
+                    LogMediaPlaybackFailed(args.ExtendedErrorCode, args.Error, args.ErrorMessage);
+                });
+        }
+        catch (Exception ex)
+        {
+            LogPlaybackError(ex, _currentItem?.Name);
+        }
     }
 
     /// <summary>
