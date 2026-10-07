@@ -70,6 +70,9 @@ internal sealed partial class VideoViewModel : ObservableObject
     [LoggerMessage(Level = LogLevel.Error, Message = "Playback error for \"{ItemName}\".")]
     private partial void LogPlaybackError(Exception exception, string? itemName);
 
+    [LoggerMessage(Level = LogLevel.Error, Message = "Media playback failed with {Error}: {ErrorMessage}.")]
+    private partial void LogMediaPlaybackFailed(Exception exception, MediaPlayerError error, string errorMessage);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "Failed to present subtitle track.")]
     private partial void LogSubtitlePresentationError(Exception exception);
 
