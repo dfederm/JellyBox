@@ -161,7 +161,7 @@ internal sealed partial class VideoViewModel
                     if (_currentMediaSource.TranscodingUrl.Contains("TranscodeReasons=", StringComparison.Ordinal))
                     {
                         int start = _currentMediaSource.TranscodingUrl.IndexOf("TranscodeReasons=", StringComparison.Ordinal) + 17;
-                        int end = _currentMediaSource.TranscodingUrl.IndexOf('&', start);
+                        int end = _currentMediaSource.TranscodingUrl.IndexOf('&', start, StringComparison.Ordinal);
                         if (end == -1)
                         {
                             end = _currentMediaSource.TranscodingUrl.Length;
