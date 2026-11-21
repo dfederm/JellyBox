@@ -13,7 +13,7 @@
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="11.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="11.0.0" />
     <PackageVersion Include="Microsoft.UI.Xaml" Version="2.8.7" />
-    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
+    <PackageVersion Include="Microsoft.Web.WebView2" Version="1.0.4370.26" />
     <PackageVersion Include="Microsoft.Xaml.Behaviors.Uwp.Managed" Version="3.0.1" />
   </ItemGroup>
   <ItemGroup>
